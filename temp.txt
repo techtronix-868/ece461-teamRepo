@@ -1,3 +1,4 @@
 The following document is being utilized for completing the intial setup for the github reposiotry assignment.
 Each member is requested to enter their name on each line respectively and make a commit and push.
 Kahaan Patel
+Ishaan Jain
