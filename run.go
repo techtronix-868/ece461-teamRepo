@@ -4,6 +4,7 @@ import (
     "fmt"
     "os"
     "bufio"
+    "regexp"
 )
 
 func readInput(inputFile string){
@@ -18,17 +19,28 @@ func readInput(inputFile string){
 
     var fileLines []string
 
+    //The following read the file and adds to an array
     for fileScanner.Scan() {
         fileLines = append(fileLines, fileScanner.Text())
     }
-
     readfile.Close()
 
+    var re = regexp.MustCompile(`(?m)github`)
+
+    var github[]string
+    var npm[]string
     for _, line := range fileLines {
-        fmt.Println(line)
+        // Testing if we are able to print correct output from input file
+        // fmt.Println(line)
+
+        // Seperating github and npm in to their respecting arrays
+        if re.MatchString(line){
+            github = append(github,line)
+        }else{
+            npm = append(npm,line)
+        }
     }
 
-    fmt.Println(fileLines)
 
 }
 
