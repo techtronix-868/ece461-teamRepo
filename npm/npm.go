@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"os"
+	lg "app/lg"
 )
 
 type Connect_npm struct {
@@ -22,6 +24,7 @@ type Connect_npm struct {
 	TestScript   bool   
 	Commits      int    
 	Downloads    int    
+	URL			 string
 }
 
 
@@ -112,48 +115,67 @@ type Package struct {
 }
 
 func (cn Connect_npm) Data(packageName string) *nd.NdJson {
+	cn.URL = packageName
+
+	lg.Init(os.Getenv("LOG_FILE"))
 
 	// The following makes an API call to NPM site and recieves JSON response.
 	res1 := strings.Split(packageName,"/")
 	packageName = res1[len(res1)-1]
 	resp, err := http.Get(fmt.Sprintf("https://api.npms.io/v2/package/%s", packageName))
 	if err != nil {
-		
+		lg.ErrorLogger.Println("Unable to reach package through RESTFUL API in npm.go : ",packageName)
+		return nil
 	}
 	defer resp.Body.Close()
 
 	// Marshallig JSON response onto the required struct
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
+		lg.ErrorLogger.Println("Unable to marshal JSON response to struct in npm.go : ",body)
 		panic(err) 
+		return nil
 	}
 
+	// Package type variable that hold unmarshalled JSON response
 	var pkg Package
 
 	// Unmarshal or Decode the JSON to the interface.
 	json.Unmarshal([]byte(body), &pkg)
 
+
 	cn.Package = pkg.Collected.Metadata.Name
+	lg.InfoLogger.Println("Setting package name : ",cn.Package)
 	cn.Version = pkg.Collected.Metadata.Version
+	lg.InfoLogger.Println("Setting Version : ",cn.Version)
 	cn.Maintainers = len(pkg.Collected.Metadata.Maintainers)
+	lg.InfoLogger.Println("Setting Maintainer: ",cn.Maintainers)
 	if (len(pkg.Collected.Metadata.Contributors) > 0){
 		cn.Contributors = len(pkg.Collected.Metadata.Contributors)
 	} else {
 		cn.Contributors = len(pkg.Collected.Github.Contributors)
 	}
+	lg.InfoLogger.Println("Setting Contributors: ",cn.Contributors)
 	cn.License = pkg.Collected.Metadata.License
+	lg.InfoLogger.Println("Setting License: ",cn.License)
 	cn.Dependencies = len(pkg.Collected.Metadata.Dependencies)
+	lg.InfoLogger.Println("Setting Dependenices: ",cn.Dependencies)
 	cn.DevDeps = len(pkg.Collected.Metadata.DevDependencies)
+	lg.InfoLogger.Println("Setting DevDeps: ",cn.DevDeps)
 	cn.Releases = len(pkg.Collected.Metadata.Releases)
+	lg.InfoLogger.Println("Setting Releases: ",cn.Releases)
 	cn.TestScript = pkg.Collected.Metadata.HasTestScript
+	lg.InfoLogger.Println("Setting TestScript: ",cn.TestScript)
 	cn.Commits = 0
 	for _,s := range pkg.Collected.Github.Contributors{
 		cn.Commits += s.CommitsCount
 	}
+	lg.InfoLogger.Println("Setting Commits: ",cn.Commits)
 	cn.Downloads = 0
 	for _,s := range pkg.Collected.NPM.Downloads{
 		cn.Downloads += s.Count
 	}
+	lg.InfoLogger.Println("Setting Downloads: ",cn.Downloads)
 
 
 	return cn.Score()
@@ -164,7 +186,7 @@ func (cn Connect_npm) Score() *nd.NdJson {
 
 	overallScore:= 0.4*cn.get_responsivnesss()+0.1*cn.get_bus_factor() + 0.2*cn.get_License_score() + 0.1*cn.get_rampup_score() + 0.2 * cn.get_correctness()
 	nd := new(nd.NdJson)
-	nd=nd.DataToNd(cn.Package,overallScore,cn.get_rampup_score(),cn.get_bus_factor(),cn.get_responsivnesss(),cn.get_correctness(),cn.get_License_score())
+	nd=nd.DataToNd(cn.URL,overallScore,cn.get_rampup_score(),cn.get_bus_factor(),cn.get_responsivnesss(),cn.get_correctness(),cn.get_License_score())
 	return nd
 }
 

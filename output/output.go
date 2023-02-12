@@ -7,7 +7,7 @@ import (
 )
 
 type NdJson struct {
-	Package               string
+	URL               string
 	Overall_score         float64
 	Ramp_up_score         float64
 	Bus_factor            float64
@@ -17,7 +17,7 @@ type NdJson struct {
 }
 
 func (nd *NdJson) DataToNd(_package string, Overall_score float64, _Ramp_up_score float64, _Bus_factor float64, _Responsiveness float64, _Correctness float64, _License_compatability float64) *NdJson {
-	nd.Package = _package
+	nd.URL = _package
 	nd.Overall_score = Overall_score
 	nd.Ramp_up_score = _Ramp_up_score
 	nd.Bus_factor = _Bus_factor

@@ -3,13 +3,15 @@ package main
 import (
 	np "app/npm"
     nd "app/output"
+    log "app/lg"
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"regexp"
 	"strings"
+
 )
+
 
 func seperateLinks(links[] string) ([]*nd.NdJson){
     var re = regexp.MustCompile(`(?m)github`)
@@ -17,10 +19,11 @@ func seperateLinks(links[] string) ([]*nd.NdJson){
     var scores[]*nd.NdJson
     for _, url := range links {
         if re.MatchString(url){
-            // urlScore:= scoreGithub(url)
+            log.InfoLogger.Println("Github Condition in Seperate Links , Current URL: ",url)
             //fmt.Println(url)
             //scores = append(scores,url)
         }else if strings.Contains(url,"npm"){
+            log.InfoLogger.Println("NPM Condition in Seperate Links , Current URL: ",url)
             // urlScore:= scoreNPM(url)
 			//fmt.Println(url)
             cn := new(np.Connect_npm)
@@ -34,7 +37,7 @@ func readInput(inputFile string)[]string{
     readfile,err := os.Open(inputFile)
 
     if err != nil {
-        log.Println("error in oprning file")
+        log.ErrorLogger.Println("error in oprning file")
         return nil
     }
 
@@ -52,21 +55,8 @@ func readInput(inputFile string)[]string{
     return fileLines
 }
 
-func main(){
-	logfile := os.Getenv("LOG_FILE")
-	// if logfile == "" {
-	// 	logfile = "./app.log"
-	// }
-
-	f, err := os.OpenFile(logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		fmt.Println("Failed to open log file:", err)
-		os.Exit(1)
-	}
-	defer f.Close()
-
-	log.SetOutput(f)
-
+func main(){ 
+    log.Init(os.Getenv("LOG_FILE"))
     inputFile := os.Args[1]
     links:=readInput(inputFile)
     if links == nil {
