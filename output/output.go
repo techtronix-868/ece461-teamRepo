@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sort"
 )
 
 type NdJson struct {
@@ -14,6 +15,21 @@ type NdJson struct {
 	Responsiveness        float64
 	License_compatability float64
 	Correctness           float64
+}
+
+type ByOverallScore []*NdJson
+
+func (a ByOverallScore) Len() int {
+	return len(a)
+}
+
+func (a ByOverallScore) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+
+func (a ByOverallScore) Less(i, j int) bool {
+	// Change the sign to < for ascending.
+	return a[i].Overall_score > a[j].Overall_score
 }
 
 func (nd *NdJson) DataToNd(_package string, Overall_score float64, _Ramp_up_score float64, _Bus_factor float64, _Responsiveness float64, _Correctness float64, _License_compatability float64) *NdJson {
@@ -30,6 +46,9 @@ func (nd *NdJson) DataToNd(_package string, Overall_score float64, _Ramp_up_scor
 
 func FormattedOutput(data []*NdJson) string {
 	var jsonStrings []string
+
+	// Sorting in the order for the best score at the top
+	sort.Sort(ByOverallScore(data))
 
 	// Loop over the slice of structs and convert each to JSON
 	for _, record := range data {
