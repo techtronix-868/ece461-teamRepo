@@ -26,8 +26,9 @@ func seperateLinks(links[] string) ([]*nd.NdJson){
             log.InfoLogger.Println("NPM Condition in Seperate Links , Current URL: ",url)
             // urlScore:= scoreNPM(url)
 			//fmt.Println(url)
-            cn := new(np.Connect_npm)
-            scores = append(scores,cn.Data(url))
+            if cn := new(np.Connect_npm); cn.Data(url) != nil {
+                scores = append(scores, cn.Data(url))
+            }
         }
     }
     return scores
