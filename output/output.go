@@ -8,7 +8,7 @@ import (
 )
 
 type NdJson struct {
-	URL               string
+	URL                   string
 	Overall_score         float64
 	Ramp_up_score         float64
 	Bus_factor            float64
