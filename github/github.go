@@ -30,7 +30,7 @@ func roundFloat(val float64, prec uint) float64 {
 //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
 
 //Function to get total number of commits in a repository
-func get_com(owner string, name string) int {
+func Get_com(owner string, name string) int {
     graphqlClient := graphql.NewClient("https://api.github.com/graphql")
 	lg.Init(os.Getenv("LOG_FILE"))
 	
@@ -79,7 +79,7 @@ func get_com(owner string, name string) int {
 
 }
 
-func get_releases(owner string, name string) int {
+func Get_releases(owner string, name string) int {
 
 	graphqlClient := graphql.NewClient("https://api.github.com/graphql")
 
@@ -130,12 +130,12 @@ func get_releases(owner string, name string) int {
 }
 
 
-func scoreResponsiveness(owner string,repo string) float64 {
+func ScoreResponsiveness(owner string,repo string) float64 {
 
 	lg.Init(os.Getenv("LOG_FILE"))
 
-	com := get_com(owner,repo)
-	releases := get_releases(owner,repo)
+	com := Get_com(owner,repo)
+	releases := Get_releases(owner,repo)
 
 	score := float64(releases) / float64((com + 1))
 	if score > 1{
@@ -152,7 +152,7 @@ func scoreResponsiveness(owner string,repo string) float64 {
 
 }
 
-func get_assignees(owner string, name string) int{
+func Get_assignees(owner string, name string) int{
 
 	lg.Init(os.Getenv("LOG_FILE"))
 	graphqlClient := graphql.NewClient("https://api.github.com/graphql")
@@ -202,7 +202,7 @@ func get_assignees(owner string, name string) int{
 
 }
 
-func get_contributors(owner string, name string) int{
+func Get_contributors(owner string, name string) int{
 
 	lg.Init(os.Getenv("LOG_FILE"))
 
@@ -256,12 +256,12 @@ func get_contributors(owner string, name string) int{
 
 }
 
-func scoreBusFactor(owner string, repo string) float64 {
+func ScoreBusFactor(owner string, repo string) float64 {
 
 	lg.Init(os.Getenv("LOG_FILE"))
 
-	assign := get_assignees(owner,repo)
-	contributors := get_contributors("nullivex","nodist")
+	assign := Get_assignees(owner,repo)
+	contributors := Get_contributors("nullivex","nodist")
 
 	score := float64(assign) / float64((contributors + 1))
 
@@ -609,10 +609,10 @@ func Score(URL string) *nd.NdJson {
 	var repo string = cuttingByTwo[3]
 
 
-	overallScore := 0.4*scoreResponsiveness(owner,repo)+ 0.1*scoreBusFactor(owner,repo) + 0.2*scoreLicense(owner, repo) + 0.1*scoreRampUp(owner,repo) + 0.2 * scoreCorrectness(owner,repo)
+	overallScore := 0.4*scoreResponsiveness(owner,repo)//+ 0.1*scoreBusFactor(owner,repo) + 0.2*scoreLicense(owner, repo) + 0.1*scoreRampUp(owner,repo) + 0.2 * scoreCorrectness(owner,repo)
 	lg.InfoLogger.Println("Finding overall score : ",overallScore)
 	nd := new(nd.NdJson)
-	nd=nd.DataToNd(URL,overallScore,scoreRampUp(owner,repo),scoreBusFactor(owner,repo),scoreResponsiveness(owner,repo),scoreCorrectness(owner,repo),scoreLicense(owner,repo))
+	nd=nd.DataToNd(URL,overallScore,scoreRampUp(owner,repo),ScoreBusFactor(owner,repo),ScoreResponsiveness(owner,repo),scoreCorrectness(owner,repo),scoreLicense(owner,repo))
 
 	return nd
 }
