@@ -4,6 +4,7 @@ import (
 	np "app/npm"
     nd "app/output"
     log "app/lg"
+    gh "app/github"
 	"bufio"
 	"fmt"
 	"os"
@@ -19,15 +20,15 @@ func seperateLinks(links[] string) ([]*nd.NdJson){
     var scores[]*nd.NdJson
     for _, url := range links {
         if re.MatchString(url){
-            log.InfoLogger.Println("Github Condition in Seperate Links , Current URL: ",url)
+            //log.InfoLogger.Println("Github Condition in Seperate Links , Current URL: ",url)
             //fmt.Println(url)
-            //scores = append(scores,url)
-        }else if strings.Contains(url,"npm"){
-            log.InfoLogger.Println("NPM Condition in Seperate Links , Current URL: ",url)
-            // urlScore:= scoreNPM(url)
-			//fmt.Println(url)
+            scores = append(scores,gh.Score(url))
+        } else if strings.Contains(url,"npm"){
+            //log.InfoLogger.Println("NPM Condition in Seperate Links , Current URL: ",url)
+             // urlScore:= scoreNPM(url)
+		 	//fmt.Println(url)
             if cn := new(np.Connect_npm); cn.Data(url) != nil {
-                scores = append(scores, cn.Data(url))
+                 scores = append(scores, cn.Data(url))
             }
         }
     }
@@ -59,6 +60,7 @@ func readInput(inputFile string)[]string{
 func main(){ 
     log.Init(os.Getenv("LOG_FILE"))
     inputFile := os.Args[1]
+    
     links:=readInput(inputFile)
     if links == nil {
     	return
