@@ -1185,3 +1185,19 @@ INFO: 2023/02/14 16:50:36 github.go:147: Finding responsiveness score :  0.05048
 INFO: 2023/02/14 16:50:36 github.go:198: Setting number of assignees :  6
 INFO: 2023/02/14 16:50:36 github.go:252: Setting number of contributors :  29
 INFO: 2023/02/14 16:50:36 github.go:274: Finding responsiveness score :  0.2
+INFO: 2023/02/14 17:09:39 github.go:77: Setting number of commits :  415
+INFO: 2023/02/14 17:09:39 github.go:126: Setting number of releases :  21
+INFO: 2023/02/14 17:09:39 github.go:77: Setting number of commits :  415
+INFO: 2023/02/14 17:09:39 github.go:126: Setting number of releases :  21
+INFO: 2023/02/14 17:09:39 github.go:147: Finding responsiveness score :  0.05048076923076923
+INFO: 2023/02/14 17:09:39 github.go:198: Setting number of assignees :  6
+INFO: 2023/02/14 17:09:39 github.go:252: Setting number of contributors :  29
+INFO: 2023/02/14 17:09:39 github.go:274: Finding responsiveness score :  0.2
+INFO: 2023/02/14 17:09:58 github.go:77: Setting number of commits :  415
+INFO: 2023/02/14 17:09:58 github.go:126: Setting number of releases :  21
+INFO: 2023/02/14 17:09:59 github.go:77: Setting number of commits :  415
+INFO: 2023/02/14 17:09:59 github.go:126: Setting number of releases :  21
+INFO: 2023/02/14 17:09:59 github.go:147: Finding responsiveness score :  0.05048076923076923
+INFO: 2023/02/14 17:09:59 github.go:198: Setting number of assignees :  6
+INFO: 2023/02/14 17:09:59 github.go:252: Setting number of contributors :  29
+INFO: 2023/02/14 17:09:59 github.go:274: Finding responsiveness score :  0.2

@@ -609,7 +609,7 @@ func Score(URL string) *nd.NdJson {
 	var repo string = cuttingByTwo[3]
 
 
-	overallScore := 0.4*scoreResponsiveness(owner,repo)//+ 0.1*scoreBusFactor(owner,repo) + 0.2*scoreLicense(owner, repo) + 0.1*scoreRampUp(owner,repo) + 0.2 * scoreCorrectness(owner,repo)
+	overallScore := 0.4*ScoreResponsiveness(owner,repo) + 0.1*ScoreBusFactor(owner,repo) + 0.2*scoreLicense(owner, repo) + 0.1*scoreRampUp(owner,repo) + 0.2 * scoreCorrectness(owner,repo)
 	lg.InfoLogger.Println("Finding overall score : ",overallScore)
 	nd := new(nd.NdJson)
 	nd=nd.DataToNd(URL,overallScore,scoreRampUp(owner,repo),ScoreBusFactor(owner,repo),ScoreResponsiveness(owner,repo),scoreCorrectness(owner,repo),scoreLicense(owner,repo))
