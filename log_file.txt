@@ -1,0 +1,48 @@
+INFO: 2023/02/14 16:48:39 github.go:77: Setting number of commits :  740
+INFO: 2023/02/14 16:48:40 github.go:126: Setting number of releases :  55
+INFO: 2023/02/14 16:48:40 github.go:147: Finding responsiveness score :  0.07422402159244265
+INFO: 2023/02/14 16:48:40 github.go:198: Setting number of assignees :  177
+INFO: 2023/02/14 16:48:40 github.go:252: Setting number of contributors :  29
+INFO: 2023/02/14 16:48:40 github.go:274: Finding responsiveness score :  1
+INFO: 2023/02/14 16:48:43 git.go:57: Public Domain  found in  cloudinary_npm/samples/photo_album/public/cloudinary_cors.html
+INFO: 2023/02/14 16:48:43 git.go:57: MIT  found in  cloudinary_npm/.git/objects/pack/pack-a02e92bcabb88a312b45795374ac800fccfa26a0.pack
+INFO: 2023/02/14 16:48:43 git.go:57: MIT  found in  cloudinary_npm/README.md
+INFO: 2023/02/14 16:48:43 github.go:499: LicenseScore  is  :  1
+INFO: 2023/02/14 16:48:43 github.go:331: Setting number of depandencies :  79
+INFO: 2023/02/14 16:48:44 github.go:387: Setting number of Dev depandancies :  27
+INFO: 2023/02/14 16:48:44 github.go:415: Finding RampUp score :  0.3375
+INFO: 2023/02/14 16:48:44 github.go:553: Setting the repository version :  1.2.3
+INFO: 2023/02/14 16:48:44 github.go:591: Finding Correctness score :  0.1428571428571429
+INFO: 2023/02/14 16:48:44 github.go:613: Finding overall score :  0.39057142857142857
+INFO: 2023/02/14 16:48:44 github.go:331: Setting number of depandencies :  79
+INFO: 2023/02/14 16:48:45 github.go:387: Setting number of Dev depandancies :  27
+INFO: 2023/02/14 16:48:45 github.go:415: Finding RampUp score :  0.3375
+INFO: 2023/02/14 16:48:45 github.go:198: Setting number of assignees :  177
+INFO: 2023/02/14 16:48:45 github.go:252: Setting number of contributors :  29
+INFO: 2023/02/14 16:48:45 github.go:274: Finding responsiveness score :  1
+INFO: 2023/02/14 16:48:45 github.go:77: Setting number of commits :  740
+INFO: 2023/02/14 16:48:45 github.go:126: Setting number of releases :  55
+INFO: 2023/02/14 16:48:45 github.go:147: Finding responsiveness score :  0.07422402159244265
+INFO: 2023/02/14 16:48:45 github.go:553: Setting the repository version :  1.2.3
+INFO: 2023/02/14 16:48:45 github.go:591: Finding Correctness score :  0.1428571428571429
+INFO: 2023/02/14 16:48:51 git.go:57: Public Domain  found in  cloudinary_npm/samples/photo_album/public/cloudinary_cors.html
+INFO: 2023/02/14 16:48:51 git.go:57: MIT  found in  cloudinary_npm/.git/objects/pack/pack-a02e92bcabb88a312b45795374ac800fccfa26a0.pack
+INFO: 2023/02/14 16:48:51 git.go:57: MIT  found in  cloudinary_npm/README.md
+INFO: 2023/02/14 16:48:51 github.go:499: LicenseScore  is  :  1
+INFO: 2023/02/14 16:48:51 npm.go:137: Setting package name :  express
+INFO: 2023/02/14 16:48:51 npm.go:139: Setting Version :  4.18.2
+INFO: 2023/02/14 16:48:51 npm.go:141: Setting Maintainer:  3
+INFO: 2023/02/14 16:48:51 npm.go:147: Setting Contributors:  7
+INFO: 2023/02/14 16:48:51 npm.go:149: Setting License:  MIT
+INFO: 2023/02/14 16:48:51 npm.go:151: Setting Dependenices:  31
+INFO: 2023/02/14 16:48:51 npm.go:153: Setting DevDeps:  17
+INFO: 2023/02/14 16:48:51 npm.go:155: Setting Releases:  5
+INFO: 2023/02/14 16:48:51 npm.go:157: Setting TestScript:  true
+INFO: 2023/02/14 16:48:51 npm.go:162: Setting Commits:  4986
+INFO: 2023/02/14 16:48:51 npm.go:167: Setting Downloads:  2404945992
+INFO: 2023/02/14 16:48:51 github.go:77: Setting number of commits :  415
+INFO: 2023/02/14 16:48:51 github.go:126: Setting number of releases :  21
+INFO: 2023/02/14 16:48:51 github.go:147: Finding responsiveness score :  0.05048076923076923
+INFO: 2023/02/14 16:48:52 github.go:198: Setting number of assignees :  6
+INFO: 2023/02/14 16:48:52 github.go:252: Setting number of contributors :  29
+INFO: 2023/02/14 16:48:52 github.go:274: Finding responsiveness score :  0.2

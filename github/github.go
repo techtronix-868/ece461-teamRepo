@@ -12,6 +12,7 @@ import (
 	"os"
 	nd "app/output"
 	lg "app/lg"
+	git "app/git"
 
 )
 
@@ -137,7 +138,6 @@ func scoreResponsiveness(owner string,repo string) float64 {
 	releases := get_releases(owner,repo)
 
 	score := float64(releases) / float64((com + 1))
-
 	if score > 1{
         score = 1
 	} else if score < 0{
@@ -423,56 +423,66 @@ func get_License(owner string, name string) string{
 
 	lg.Init(os.Getenv("LOG_FILE"))
 
-	graphqlClient := graphql.NewClient("https://api.github.com/graphql")
+	url := fmt.Sprintf("https://github.com/%s/%s",owner,name)
+
+	if git.Clone(url){
+		return "present"
+	}
+
+
+	
+
+	// graphqlClient := graphql.NewClient("https://api.github.com/graphql")
 	
 	
-    graphqlRequest := graphql.NewRequest(`
-	query Get_commits($own: String!, $repo: String!){
-			repository(name: $repo, owner: $own) {
-			  licenseInfo {
-				name
-			  }
+    // graphqlRequest := graphql.NewRequest(`
+	// query Get_commits($own: String!, $repo: String!){
+	// 		repository(name: $repo, owner: $own) {
+	// 		  licenseInfo {
+	// 			name
+	// 		  }
 			  
-		}
-	}
+	// 	}
+	// }
 		
-    `)
+    // `)
 
-	graphqlRequest.Var("own",owner)
- 	graphqlRequest.Var("repo",name)
-
-
-	graphqlRequest.Header.Set("Authorization", "Bearer " + GITHUB_TOKEN)
-    var graphqlResponse interface{}
-    if err := graphqlClient.Run(context.Background(), graphqlRequest, &graphqlResponse); err != nil {
-		lg.ErrorLogger.Println("Unable to get License through GrpahQL API in github.go")
-        os.Exit(1)
-    }
-
-	str := fmt.Sprint(graphqlResponse)
-	//fmt.Println(str)
-
-	found_license := strings.Count(str, "name:")
-	if found_license == 0{
-		lg.WarningLogger.Println("No license Found")
-		return "No license found"
-	}
-
-	parse_1 := strings.SplitAfter(str, "name:")
-	//fmt.Println(parse_1[0])
-    parse_2 := fmt.Sprint(parse_1[1])
-    parse_3 := strings.Split(parse_2,"]")
-	parse_4 := fmt.Sprint(parse_3[0])
-	parse_5 := strings.Split(parse_4,"License")
-	parse_6 := fmt.Sprint(parse_5[0])
-	parse_7 := strings.Split(parse_6," ")
-
-	//fmt.Println(parse_5[0])
-
-	lg.InfoLogger.Println("License is  : ",parse_7[0])
+	// graphqlRequest.Var("own",owner)
+ 	// graphqlRequest.Var("repo",name)
 
 
-	return parse_7[0]
+	// graphqlRequest.Header.Set("Authorization", "Bearer " + GITHUB_TOKEN)
+    // var graphqlResponse interface{}
+    // if err := graphqlClient.Run(context.Background(), graphqlRequest, &graphqlResponse); err != nil {
+	// 	lg.ErrorLogger.Println("Unable to get License through GrpahQL API in github.go")
+    //     os.Exit(1)
+    // }
+
+	// str := fmt.Sprint(graphqlResponse)
+	// fmt.Println(str)
+
+	// found_license := strings.Count(str, "name:")
+	// fmt.Println(found_license)
+	// if found_license == 0{
+	// 	lg.WarningLogger.Println("No license Found")
+	// 	return "No license found"
+	// }
+
+	// parse_1 := strings.SplitAfter(str, "name:")
+	// //fmt.Println(parse_1[0])
+    // parse_2 := fmt.Sprint(parse_1[1])
+    // parse_3 := strings.Split(parse_2,"]")
+	// parse_4 := fmt.Sprint(parse_3[0])
+	// parse_5 := strings.Split(parse_4,"License")
+	// parse_6 := fmt.Sprint(parse_5[0])
+	// parse_7 := strings.Split(parse_6," ")
+
+	// //fmt.Println(parse_5[0])
+
+	//lg.InfoLogger.Println("License is  : ",parse_7[0])
+
+
+	return "not_present"
 
 
 
@@ -483,15 +493,11 @@ func get_License(owner string, name string) string{
 func scoreLicense(owner string, repo string) float64{
 	lg.Init(os.Getenv("LOG_FILE"))
 
-	cmpLicenses := []string{"Public Domain","MIT","X11","BSD-new","Apache 2.0","LGPLv2.1","LGPLv2.1+", "LGPLv3", "LGPLv3+"}
-
 	license := get_License(owner,repo)
-
-	for _, value := range cmpLicenses {
-	   if value == license {
+	
+	if "present" == license {
 		  lg.InfoLogger.Println("LicenseScore  is  : ",1)
 		  return 1.0
-	   }
 	}
 	lg.InfoLogger.Println("LicenseScore is  : ",0)
 	return 0.0
@@ -603,7 +609,7 @@ func Score(URL string) *nd.NdJson {
 	var repo string = cuttingByTwo[3]
 
 
-	overallScore := 0.4*scoreResponsiveness(owner,repo)//+ 0.1*scoreBusFactor(owner,repo) + 0.2*scoreLicense(owner, repo) + 0.1*scoreRampUp(owner,repo) + 0.2 * scoreCorrectness(owner,repo)
+	overallScore := 0.4*scoreResponsiveness(owner,repo)+ 0.1*scoreBusFactor(owner,repo) + 0.2*scoreLicense(owner, repo) + 0.1*scoreRampUp(owner,repo) + 0.2 * scoreCorrectness(owner,repo)
 	lg.InfoLogger.Println("Finding overall score : ",overallScore)
 	nd := new(nd.NdJson)
 	nd=nd.DataToNd(URL,overallScore,scoreRampUp(owner,repo),scoreBusFactor(owner,repo),scoreResponsiveness(owner,repo),scoreCorrectness(owner,repo),scoreLicense(owner,repo))

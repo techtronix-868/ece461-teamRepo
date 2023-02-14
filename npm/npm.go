@@ -5,11 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math"
+	
 	"net/http"
 	"strconv"
 	"strings"
 	"os"
 	lg "app/lg"
+	git "app/git"
 )
 
 type Connect_npm struct {
@@ -25,6 +28,9 @@ type Connect_npm struct {
 	Commits      int    
 	Downloads    int    
 	URL			 string
+	Homepage 	 string
+	CommitFreq	 float64
+	ReleaseFreq	 float64
 }
 
 
@@ -33,19 +39,11 @@ type Package struct {
 	Collected  struct {
 		Metadata struct {
 			Name        string `json:"name"`
-			Scope       string `json:"scope"`
 			Version     string `json:"version"`
-			Description string `json:"description"`
-			Keywords    []string `json:"keywords"`
-			Date        string `json:"date"`
 			Author      struct {
 				Name  string `json:"name"`
 				Email string `json:"email"`
 			} `json:"author"`
-			Publisher struct {
-				Username string `json:"username"`
-				Email    string `json:"email"`
-			} `json:"publisher"`
 			Maintainers []struct {
 				Username string `json:"username"`
 				Email    string `json:"email"`
@@ -87,24 +85,6 @@ type Package struct {
 			StarsCount      int    `json:"starsCount"`
 			ForksCount      int    `json:"forksCount"`
 			SubscribersCount int    `json:"subscribersCount"`
-			Issues          struct {
-				Count      int `json:"count"`
-				OpenCount  int `json:"openCount"`
-				Distribution struct {
-					OneHr    int `json:"3600"`
-					ThreeHr  int `json:"10800"`
-					NineHr   int `json:"32400"`
-					OneDay   int `json:"97200"`
-					ThreeDay int `json:"291600"`
-					OneWk    int `json:"874800"`
-					TwoWk    int `json:"2624400"`
-					OneMo    int `json:"7873200"`
-					ThreeMo  int `json:"23619600"`
-					SixMo    int `json:"70858800"`
-					OneYr    int `json:"212576400"`
-				} `json:"distribution"`
-				IsDisabled bool `json:"isDisabled"`
-			} `json:"issues"`
 			Contributors []struct {
 				Username     string `json:"username"`
 				CommitsCount int    `json:"commitsCount"`
@@ -112,6 +92,15 @@ type Package struct {
 
 		}`json:"github"`
 	} `json:"collected"`
+	Evaluation struct{
+		Quality map[string]string `json:"quality"`
+		Popularity map[string]string `json:"popularity"`
+		Maintenance struct {
+			ReleaseFreq float64 `json:"releasesFrequency"`
+			CommitFreq  float64 `json:"commitsFrequency"`
+		} `json:"maintenance"`
+
+	} `json:"evaluation"`
 }
 
 func (cn Connect_npm) Data(packageName string) *nd.NdJson {
@@ -176,6 +165,10 @@ func (cn Connect_npm) Data(packageName string) *nd.NdJson {
 		cn.Downloads += s.Count
 	}
 	lg.InfoLogger.Println("Setting Downloads: ",cn.Downloads)
+	cn.Homepage = pkg.Collected.Metadata.Links.Repository
+	
+	cn.ReleaseFreq=pkg.Evaluation.Maintenance.ReleaseFreq
+	cn.CommitFreq=pkg.Evaluation.Maintenance.CommitFreq
 
 
 	return cn.Score()
@@ -183,7 +176,13 @@ func (cn Connect_npm) Data(packageName string) *nd.NdJson {
 
 func (cn Connect_npm) Score() *nd.NdJson {
 	
+	if(cn.get_License_score() == 0.0){
+		res := git.Clone(cn.Homepage)
+		if res {
+			cn.License = "MIT"
+		}
 
+	}
 	overallScore:= 0.4*cn.get_responsivnesss()+0.1*cn.get_bus_factor() + 0.2*cn.get_License_score() + 0.1*cn.get_rampup_score() + 0.2 * cn.get_correctness()
 	nd := new(nd.NdJson)
 	nd=nd.DataToNd(cn.URL,overallScore,cn.get_rampup_score(),cn.get_bus_factor(),cn.get_responsivnesss(),cn.get_correctness(),cn.get_License_score())
@@ -202,6 +201,8 @@ func Contains(sl []string, name string) bool {
 func (cn Connect_npm) get_License_score() float64 {
 	cmpLicenses := []string{"Public Domain","MIT","X11","BSD-new","Apache 2.0","LGPLv2.1","LGPLv2.1+", "LGPLv3", "LGPLv3+"}
 
+	
+	
 	if Contains(cmpLicenses,cn.License){
 		return 1.0
 	}
@@ -241,5 +242,13 @@ func (cn Connect_npm) get_correctness() float64{
 }
 
 func (cn Connect_npm) get_responsivnesss() float64{
+	// rf:=roundFloat(cn.ReleaseFreq,2)
+	// cf:=roundFloat(cn.CommitFreq,2)
+
 	return float64(cn.Releases) / float64(cn.Commits)
+}
+
+func roundFloat(val float64, precision uint) float64 {
+    ratio := math.Pow(10, float64(precision))
+    return math.Round(val*ratio) / ratio
 }

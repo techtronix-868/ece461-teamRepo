@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"sort"
+	"math"
 )
 
 type NdJson struct {
@@ -34,12 +35,12 @@ func (a ByOverallScore) Less(i, j int) bool {
 
 func (nd *NdJson) DataToNd(_package string, Overall_score float64, _Ramp_up_score float64, _Bus_factor float64, _Responsiveness float64, _Correctness float64, _License_compatability float64) *NdJson {
 	nd.URL = _package
-	nd.Overall_score = Overall_score
-	nd.Ramp_up_score = _Ramp_up_score
-	nd.Bus_factor = _Bus_factor
-	nd.Responsiveness = _Responsiveness
-	nd.License_compatability = _License_compatability
-	nd.Correctness = _Correctness
+	nd.Overall_score = math.Round(Overall_score*100)/100
+	nd.Ramp_up_score =  math.Round(_Ramp_up_score*100)/100
+	nd.Bus_factor =  math.Round(_Bus_factor*100)/100
+	nd.Responsiveness =  math.Round(_Responsiveness*100)/100
+	nd.License_compatability =  math.Round(_License_compatability*100)/100
+	nd.Correctness =  math.Round(_Correctness*100)/100
 
 	return nd
 }

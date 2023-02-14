@@ -1,7 +1,12 @@
 #!/bin/bash
 
 if [ "$1" == "install" ]; then
+    export GITHUB_TOKEN=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
     export LOG_FILE=log_file.txt
+    go get app/git
+    go get app/github
+    go get app/lg
+    go get app/npm
     >log_file.txt
     go run Main.go ./sample_input.txt 
 fi
