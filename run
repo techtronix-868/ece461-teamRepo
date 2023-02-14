@@ -1,6 +1,7 @@
 #!/bin/bash
 
 if [ "$1" == "install" ]; then
+    export LOG_FILE=log_file.txt
     >log_file.txt
     go run Main.go ./sample_input.txt 
 fi
