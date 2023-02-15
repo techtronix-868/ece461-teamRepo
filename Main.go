@@ -72,6 +72,6 @@ func main(){
     output:=nd.FormattedOutput(score)
     fmt.Println(output)
 
-    os.Exit(1)
+    os.Exit(0)
    
 }

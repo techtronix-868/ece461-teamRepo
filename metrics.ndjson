@@ -1,0 +1,11 @@
+{"metric":"RampUp_Score,"api":"rest","filepath":"npm/npm.go","line":213}
+{"metric":"Bus_factor,"api":"rest","filepath":"npm/npm.go","line":217}
+{"metric":"Responsiveness,"api":"rest","filepath":"npm/npm.go","line":243}
+{"metric":"Correctness,"api":"rest","filepath":"npm/npm.go","line":221}
+{"metric":"License,"api":"rest","filepath":"npm/npm.go","line":200}
+{"metric":"License,"api":"clone","filepath":"npm/npm.go","line":181}
+{"metric":"RampUp_Score,"api":"GraphQl","filepath":"github/github.go","line":399}
+{"metric":"Bus_factor,"api":"GraphQl","filepath":"github/github.go","line":259}
+{"metric":"Responsiveness,"api":"GraphQl","filepath":"github/github.go","line":133}
+{"metric":"Correctness,"api":"GraphQl","filepath":"github/github.go","line":563}
+{"metric":"License,"api":"clone","filepath":"github/github.go","line":422}

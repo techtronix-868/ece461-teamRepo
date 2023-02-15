@@ -6,19 +6,19 @@ if [ "$1" == "install" ]; then
     go get app/lg
     go get app/npm
 elif [ "$1" == "test" ]; then
-    export GITHUB_TOKEN=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
-    export LOG_FILE=log_file.txt
-    >log_file.txt
-    go test ./... -coverprofile=cover.out  ./...
-    go tool cover -func cover.out 
+    go test ./... -coverprofile=coverage.out ./... -v > /dev/null 2>&1
+    go tool cover -func=coverage.out > coverage.txt
+    bash parse.sh < coverage.out
+    rm -r coverage.out
+    rm -r coverage.txt
+    find git/ -name log_file.txt -delete
+    find github/ -name log_file.txt -delete
+    find npm/ -name log_file.txt -delete
+elif [ "$1" == "build" ]; then
+    go build
 elif [ -f "$1" ]; then
-    export GITHUB_TOKEN=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
-    export LOG_FILE=log_file.txt
-    >log_file.txt
-    go run Main.go ./sample_input.txt 
-    
+    go run Main.go $1 
+
 else
-    echo "Invalid argument. Usage: ./script.sh [install|test|URL_FILE.txt]"
+    echo "Invalid argument. Usage: ./run [install|test|URL_FILE.txt]"
 fi
-
-

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"math"
 	
 	"net/http"
 	"strconv"
@@ -202,7 +201,6 @@ func (cn Connect_npm) get_License_score() float64 {
 	cmpLicenses := []string{"Public Domain","MIT","X11","BSD-new","Apache 2.0","LGPLv2.1","LGPLv2.1+", "LGPLv3", "LGPLv3+"}
 
 	
-	
 	if Contains(cmpLicenses,cn.License){
 		return 1.0
 	}
@@ -246,9 +244,4 @@ func (cn Connect_npm) get_responsivnesss() float64{
 	// cf:=roundFloat(cn.CommitFreq,2)
 
 	return float64(cn.Releases) / float64(cn.Commits)
-}
-
-func roundFloat(val float64, precision uint) float64 {
-    ratio := math.Pow(10, float64(precision))
-    return math.Round(val*ratio) / ratio
 }

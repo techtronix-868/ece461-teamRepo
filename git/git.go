@@ -1,10 +1,8 @@
 package git
 
 import (
-    "bufio"
     "os"
 	"io/ioutil"
-	"io"
 	"strings"
 	"path/filepath"
 	"app/lg"
@@ -68,28 +66,4 @@ func findLicense(license string , folder string) bool {
     return isFound
 }
 
-func searchWordInFile(path string, word string) bool {
-	
-	file, err := os.Open(path)
-	if err != nil {
-		lg.WarningLogger.Println("Error opening file:", err)
-		return false
-	}
-	defer file.Close()
-
-	reader := bufio.NewReader(file)
-	for {
-		line, err := reader.ReadString('\n')
-		
-		if err == io.EOF {
-			break
-		}
-		if strings.Contains(line, word) {
-			// fmt.Println(line)
-			return true
-		}
-	}
-
-	return false
-}
 
