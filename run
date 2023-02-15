@@ -1,12 +1,24 @@
 #!/bin/bash
 
 if [ "$1" == "install" ]; then
-    export GITHUB_TOKEN=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
-    export LOG_FILE=log_file.txt
     go get app/git
     go get app/github
     go get app/lg
     go get app/npm
+elif [ "$1" == "test" ]; then
+    export GITHUB_TOKEN=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
+    export LOG_FILE=log_file.txt
+    >log_file.txt
+    go test ./... -coverprofile=cover.out  ./...
+    go tool cover -func cover.out 
+elif [ -f "$1" ]; then
+    export GITHUB_TOKEN=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
+    export LOG_FILE=log_file.txt
     >log_file.txt
     go run Main.go ./sample_input.txt 
+    
+else
+    echo "Invalid argument. Usage: ./script.sh [install|test|URL_FILE.txt]"
 fi
+
+

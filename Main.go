@@ -39,9 +39,10 @@ func seperateLinks(links[] string) ([]*nd.NdJson){
 
 func readInput(inputFile string)[]string{
     readfile,err := os.Open(inputFile)
+    log.ErrorLogger.Println("error in opeing file: ",inputFile)
 
     if err != nil {
-        log.ErrorLogger.Println("error in oprning file")
+        log.ErrorLogger.Println("error in opeing file")
         return nil
     }
 
@@ -70,5 +71,7 @@ func main(){
     score := seperateLinks(links)
     output:=nd.FormattedOutput(score)
     fmt.Println(output)
+
+    os.Exit(1)
    
 }
