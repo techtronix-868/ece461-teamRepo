@@ -17,5 +17,4 @@ while read -r line; do
 done
 
 # Output with test ratio and coverage
-echo "Tests passed/Failed: $(($tests_passed+$tests_failed-5))/$(($tests_passed+$tests_failed))"
-echo "coverage: $(tail -n 1 coverage.txt | grep -o '[0-9]*\.[0-9]*%')"
+echo "$(($tests_passed+$tests_failed-5))/$(($tests_passed+$tests_failed)) test cases passed. $(tail -n 1 coverage.txt | grep -o '[0-9]*\.[0-9]*%') line coverage achieved"

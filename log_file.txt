@@ -790,3 +790,240 @@ INFO: 2023/02/15 02:34:07 github.go:147: Finding responsiveness score :  0.00024
 INFO: 2023/02/15 02:34:08 github.go:198: Setting number of assignees :  9
 INFO: 2023/02/15 02:34:08 github.go:252: Setting number of contributors :  29
 INFO: 2023/02/15 02:34:08 github.go:274: Finding responsiveness score :  0.3
+ERROR: 2023/02/15 02:52:15 Main.go:42: error in opeing file:  sample_input.txt
+INFO: 2023/02/15 02:52:15 github.go:77: Setting number of commits :  740
+INFO: 2023/02/15 02:52:16 github.go:126: Setting number of releases :  55
+INFO: 2023/02/15 02:52:16 github.go:147: Finding responsiveness score :  0.07422402159244265
+INFO: 2023/02/15 02:52:16 github.go:198: Setting number of assignees :  176
+INFO: 2023/02/15 02:52:16 github.go:252: Setting number of contributors :  29
+INFO: 2023/02/15 02:52:16 github.go:274: Finding responsiveness score :  1
+INFO: 2023/02/15 02:52:21 git.go:55: Public Domain  found in  cloudinary_npm/samples/photo_album/public/cloudinary_cors.html
+INFO: 2023/02/15 02:52:21 git.go:55: MIT  found in  cloudinary_npm/.git/objects/pack/pack-6d81b1d08b6351d149778950ff87944350cf3305.pack
+INFO: 2023/02/15 02:52:22 git.go:55: MIT  found in  cloudinary_npm/README.md
+INFO: 2023/02/15 02:52:22 github.go:499: LicenseScore  is  :  1
+INFO: 2023/02/15 02:52:22 github.go:331: Setting number of depandencies :  79
+INFO: 2023/02/15 02:52:22 github.go:387: Setting number of Dev depandancies :  27
+INFO: 2023/02/15 02:52:22 github.go:415: Finding RampUp score :  0.3375
+INFO: 2023/02/15 02:52:23 github.go:553: Setting the repository version :  1.2.3
+INFO: 2023/02/15 02:52:23 github.go:591: Finding Correctness score :  0.1428571428571429
+INFO: 2023/02/15 02:52:23 github.go:613: Finding overall score :  0.39057142857142857
+INFO: 2023/02/15 02:52:23 github.go:331: Setting number of depandencies :  79
+INFO: 2023/02/15 02:52:23 github.go:387: Setting number of Dev depandancies :  27
+INFO: 2023/02/15 02:52:23 github.go:415: Finding RampUp score :  0.3375
+INFO: 2023/02/15 02:52:23 github.go:198: Setting number of assignees :  176
+INFO: 2023/02/15 02:52:23 github.go:252: Setting number of contributors :  29
+INFO: 2023/02/15 02:52:23 github.go:274: Finding responsiveness score :  1
+INFO: 2023/02/15 02:52:24 github.go:77: Setting number of commits :  740
+INFO: 2023/02/15 02:52:24 github.go:126: Setting number of releases :  55
+INFO: 2023/02/15 02:52:24 github.go:147: Finding responsiveness score :  0.07422402159244265
+INFO: 2023/02/15 02:52:24 github.go:553: Setting the repository version :  1.2.3
+INFO: 2023/02/15 02:52:24 github.go:591: Finding Correctness score :  0.1428571428571429
+INFO: 2023/02/15 02:52:28 git.go:55: Public Domain  found in  cloudinary_npm/samples/photo_album/public/cloudinary_cors.html
+INFO: 2023/02/15 02:52:28 git.go:55: MIT  found in  cloudinary_npm/.git/objects/pack/pack-6d81b1d08b6351d149778950ff87944350cf3305.pack
+INFO: 2023/02/15 02:52:28 git.go:55: MIT  found in  cloudinary_npm/README.md
+INFO: 2023/02/15 02:52:28 github.go:499: LicenseScore  is  :  1
+INFO: 2023/02/15 02:52:28 npm.go:136: Setting package name :  express
+INFO: 2023/02/15 02:52:28 npm.go:138: Setting Version :  4.18.2
+INFO: 2023/02/15 02:52:28 npm.go:140: Setting Maintainer:  3
+INFO: 2023/02/15 02:52:28 npm.go:146: Setting Contributors:  7
+INFO: 2023/02/15 02:52:28 npm.go:148: Setting License:  MIT
+INFO: 2023/02/15 02:52:28 npm.go:150: Setting Dependenices:  31
+INFO: 2023/02/15 02:52:28 npm.go:152: Setting DevDeps:  17
+INFO: 2023/02/15 02:52:28 npm.go:154: Setting Releases:  5
+INFO: 2023/02/15 02:52:28 npm.go:156: Setting TestScript:  true
+INFO: 2023/02/15 02:52:28 npm.go:161: Setting Commits:  4986
+INFO: 2023/02/15 02:52:28 npm.go:166: Setting Downloads:  2404945992
+INFO: 2023/02/15 02:52:28 github.go:77: Setting number of commits :  415
+INFO: 2023/02/15 02:52:29 github.go:126: Setting number of releases :  21
+INFO: 2023/02/15 02:52:29 github.go:147: Finding responsiveness score :  0.05048076923076923
+INFO: 2023/02/15 02:52:29 github.go:198: Setting number of assignees :  6
+INFO: 2023/02/15 02:52:29 github.go:252: Setting number of contributors :  29
+INFO: 2023/02/15 02:52:29 github.go:274: Finding responsiveness score :  0.2
+INFO: 2023/02/15 02:52:31 git.go:55: MIT  found in  nodist/.git/objects/pack/pack-02142b5940c8ddbeca2c7c018be6d935a9857878.pack
+INFO: 2023/02/15 02:52:31 git.go:55: MIT  found in  nodist/LICENSE.txt
+INFO: 2023/02/15 02:52:31 github.go:499: LicenseScore  is  :  1
+INFO: 2023/02/15 02:52:32 github.go:331: Setting number of depandencies :  79
+INFO: 2023/02/15 02:52:32 github.go:387: Setting number of Dev depandancies :  71
+INFO: 2023/02/15 02:52:32 github.go:415: Finding RampUp score :  0.8875
+INFO: 2023/02/15 02:52:32 github.go:553: Setting the repository version :  v0.7.0
+INFO: 2023/02/15 02:52:32 github.go:591: Finding Correctness score :  0.125
+INFO: 2023/02/15 02:52:32 github.go:613: Finding overall score :  0.35400000000000004
+INFO: 2023/02/15 02:52:33 github.go:331: Setting number of depandencies :  79
+INFO: 2023/02/15 02:52:33 github.go:387: Setting number of Dev depandancies :  71
+INFO: 2023/02/15 02:52:33 github.go:415: Finding RampUp score :  0.8875
+INFO: 2023/02/15 02:52:33 github.go:198: Setting number of assignees :  6
+INFO: 2023/02/15 02:52:33 github.go:252: Setting number of contributors :  29
+INFO: 2023/02/15 02:52:33 github.go:274: Finding responsiveness score :  0.2
+INFO: 2023/02/15 02:52:33 github.go:77: Setting number of commits :  415
+INFO: 2023/02/15 02:52:34 github.go:126: Setting number of releases :  21
+INFO: 2023/02/15 02:52:34 github.go:147: Finding responsiveness score :  0.05048076923076923
+INFO: 2023/02/15 02:52:34 github.go:553: Setting the repository version :  v0.7.0
+INFO: 2023/02/15 02:52:34 github.go:591: Finding Correctness score :  0.125
+INFO: 2023/02/15 02:52:37 git.go:55: MIT  found in  nodist/.git/objects/pack/pack-02142b5940c8ddbeca2c7c018be6d935a9857878.pack
+INFO: 2023/02/15 02:52:37 git.go:55: MIT  found in  nodist/LICENSE.txt
+INFO: 2023/02/15 02:52:37 github.go:499: LicenseScore  is  :  1
+INFO: 2023/02/15 02:52:37 github.go:77: Setting number of commits :  8005
+INFO: 2023/02/15 02:52:38 github.go:126: Setting number of releases :  2
+INFO: 2023/02/15 02:52:38 github.go:147: Finding responsiveness score :  0.0002498126405196103
+INFO: 2023/02/15 02:52:38 github.go:198: Setting number of assignees :  9
+INFO: 2023/02/15 02:52:38 github.go:252: Setting number of contributors :  29
+INFO: 2023/02/15 02:52:38 github.go:274: Finding responsiveness score :  0.3
+INFO: 2023/02/15 02:53:04 git.go:55: MIT  found in  lodash/.git/objects/pack/pack-9ece472c8ce0b3c0249b44b2cdc6aeb66cf9d553.idx
+INFO: 2023/02/15 02:53:04 git.go:55: MIT  found in  lodash/LICENSE
+INFO: 2023/02/15 02:53:05 github.go:499: LicenseScore  is  :  1
+INFO: 2023/02/15 02:53:05 github.go:331: Setting number of depandencies :  79
+INFO: 2023/02/15 02:53:05 github.go:387: Setting number of Dev depandancies :  129
+INFO: 2023/02/15 02:53:05 github.go:415: Finding RampUp score :  1
+INFO: 2023/02/15 02:53:06 github.go:553: Setting the repository version :  3.0.0
+INFO: 2023/02/15 02:53:06 github.go:591: Finding Correctness score :  0.25
+INFO: 2023/02/15 02:53:06 github.go:613: Finding overall score :  0.38
+INFO: 2023/02/15 02:53:06 github.go:331: Setting number of depandencies :  79
+INFO: 2023/02/15 02:53:06 github.go:387: Setting number of Dev depandancies :  129
+INFO: 2023/02/15 02:53:06 github.go:415: Finding RampUp score :  1
+INFO: 2023/02/15 02:53:06 github.go:198: Setting number of assignees :  9
+INFO: 2023/02/15 02:53:07 github.go:252: Setting number of contributors :  29
+INFO: 2023/02/15 02:53:07 github.go:274: Finding responsiveness score :  0.3
+INFO: 2023/02/15 02:53:07 github.go:77: Setting number of commits :  8005
+INFO: 2023/02/15 02:53:07 github.go:126: Setting number of releases :  2
+INFO: 2023/02/15 02:53:07 github.go:147: Finding responsiveness score :  0.0002498126405196103
+INFO: 2023/02/15 02:53:07 github.go:553: Setting the repository version :  3.0.0
+INFO: 2023/02/15 02:53:07 github.go:591: Finding Correctness score :  0.25
+INFO: 2023/02/15 02:53:29 git.go:55: MIT  found in  lodash/.git/objects/pack/pack-9ece472c8ce0b3c0249b44b2cdc6aeb66cf9d553.idx
+INFO: 2023/02/15 02:53:29 git.go:55: MIT  found in  lodash/LICENSE
+INFO: 2023/02/15 02:53:29 github.go:499: LicenseScore  is  :  1
+INFO: 2023/02/15 02:53:30 npm.go:136: Setting package name :  browserify
+INFO: 2023/02/15 02:53:30 npm.go:138: Setting Version :  17.0.0
+INFO: 2023/02/15 02:53:30 npm.go:140: Setting Maintainer:  40
+INFO: 2023/02/15 02:53:30 npm.go:146: Setting Contributors:  100
+INFO: 2023/02/15 02:53:30 npm.go:148: Setting License:  MIT
+INFO: 2023/02/15 02:53:30 npm.go:150: Setting Dependenices:  48
+INFO: 2023/02/15 02:53:30 npm.go:152: Setting DevDeps:  13
+INFO: 2023/02/15 02:53:30 npm.go:154: Setting Releases:  5
+INFO: 2023/02/15 02:53:30 npm.go:156: Setting TestScript:  true
+INFO: 2023/02/15 02:53:30 npm.go:161: Setting Commits:  388
+INFO: 2023/02/15 02:53:30 npm.go:166: Setting Downloads:  203718737
+INFO: 2023/02/15 02:54:49 npm.go:136: Setting package name :  browserify
+INFO: 2023/02/15 02:54:49 npm.go:138: Setting Version :  17.0.0
+INFO: 2023/02/15 02:54:49 npm.go:140: Setting Maintainer:  40
+INFO: 2023/02/15 02:54:49 npm.go:146: Setting Contributors:  100
+INFO: 2023/02/15 02:54:49 npm.go:148: Setting License:  MIT
+INFO: 2023/02/15 02:54:49 npm.go:150: Setting Dependenices:  48
+INFO: 2023/02/15 02:54:49 npm.go:152: Setting DevDeps:  13
+INFO: 2023/02/15 02:54:49 npm.go:154: Setting Releases:  5
+INFO: 2023/02/15 02:54:49 npm.go:156: Setting TestScript:  true
+INFO: 2023/02/15 02:54:49 npm.go:161: Setting Commits:  388
+INFO: 2023/02/15 02:54:49 npm.go:166: Setting Downloads:  203718737
+INFO: 2023/02/15 02:54:49 npm.go:136: Setting package name :  express
+INFO: 2023/02/15 02:54:49 npm.go:138: Setting Version :  4.18.2
+INFO: 2023/02/15 02:54:49 npm.go:140: Setting Maintainer:  3
+INFO: 2023/02/15 02:54:49 npm.go:146: Setting Contributors:  7
+INFO: 2023/02/15 02:54:49 npm.go:148: Setting License:  MIT
+INFO: 2023/02/15 02:54:49 npm.go:150: Setting Dependenices:  31
+INFO: 2023/02/15 02:54:49 npm.go:152: Setting DevDeps:  17
+INFO: 2023/02/15 02:54:49 npm.go:154: Setting Releases:  5
+INFO: 2023/02/15 02:54:49 npm.go:156: Setting TestScript:  true
+INFO: 2023/02/15 02:54:49 npm.go:161: Setting Commits:  4986
+INFO: 2023/02/15 02:54:49 npm.go:166: Setting Downloads:  2404945992
+INFO: 2023/02/15 02:54:50 npm.go:136: Setting package name :  ws
+INFO: 2023/02/15 02:54:50 npm.go:138: Setting Version :  8.12.0
+INFO: 2023/02/15 02:54:50 npm.go:140: Setting Maintainer:  4
+INFO: 2023/02/15 02:54:50 npm.go:146: Setting Contributors:  100
+INFO: 2023/02/15 02:54:50 npm.go:148: Setting License:  MIT
+INFO: 2023/02/15 02:54:50 npm.go:150: Setting Dependenices:  0
+INFO: 2023/02/15 02:54:50 npm.go:152: Setting DevDeps:  9
+INFO: 2023/02/15 02:54:50 npm.go:154: Setting Releases:  5
+INFO: 2023/02/15 02:54:50 npm.go:156: Setting TestScript:  true
+INFO: 2023/02/15 02:54:50 npm.go:161: Setting Commits:  1480
+INFO: 2023/02/15 02:54:50 npm.go:166: Setting Downloads:  5637006380
+INFO: 2023/02/15 02:54:50 github.go:77: Setting number of commits :  415
+INFO: 2023/02/15 02:54:50 github.go:126: Setting number of releases :  21
+INFO: 2023/02/15 02:54:50 github.go:147: Finding responsiveness score :  0.05048076923076923
+INFO: 2023/02/15 02:54:50 github.go:198: Setting number of assignees :  6
+INFO: 2023/02/15 02:54:50 github.go:252: Setting number of contributors :  29
+INFO: 2023/02/15 02:54:50 github.go:274: Finding responsiveness score :  0.2
+INFO: 2023/02/15 02:54:54 git.go:55: MIT  found in  nodist/.git/objects/pack/pack-02142b5940c8ddbeca2c7c018be6d935a9857878.pack
+INFO: 2023/02/15 02:54:54 git.go:55: MIT  found in  nodist/LICENSE.txt
+INFO: 2023/02/15 02:54:54 github.go:499: LicenseScore  is  :  1
+INFO: 2023/02/15 02:54:54 github.go:331: Setting number of depandencies :  79
+INFO: 2023/02/15 02:54:54 github.go:387: Setting number of Dev depandancies :  71
+INFO: 2023/02/15 02:54:54 github.go:415: Finding RampUp score :  0.8875
+INFO: 2023/02/15 02:54:54 github.go:553: Setting the repository version :  v0.7.0
+INFO: 2023/02/15 02:54:54 github.go:591: Finding Correctness score :  0.125
+INFO: 2023/02/15 02:54:54 github.go:613: Finding overall score :  0.35400000000000004
+INFO: 2023/02/15 02:54:55 github.go:331: Setting number of depandencies :  79
+INFO: 2023/02/15 02:54:55 github.go:387: Setting number of Dev depandancies :  71
+INFO: 2023/02/15 02:54:55 github.go:415: Finding RampUp score :  0.8875
+INFO: 2023/02/15 02:54:55 github.go:198: Setting number of assignees :  6
+INFO: 2023/02/15 02:54:55 github.go:252: Setting number of contributors :  29
+INFO: 2023/02/15 02:54:55 github.go:274: Finding responsiveness score :  0.2
+INFO: 2023/02/15 02:54:55 github.go:77: Setting number of commits :  415
+INFO: 2023/02/15 02:54:56 github.go:126: Setting number of releases :  21
+INFO: 2023/02/15 02:54:56 github.go:147: Finding responsiveness score :  0.05048076923076923
+INFO: 2023/02/15 02:54:56 github.go:553: Setting the repository version :  v0.7.0
+INFO: 2023/02/15 02:54:56 github.go:591: Finding Correctness score :  0.125
+INFO: 2023/02/15 02:54:58 git.go:55: MIT  found in  nodist/.git/objects/pack/pack-02142b5940c8ddbeca2c7c018be6d935a9857878.pack
+INFO: 2023/02/15 02:54:58 git.go:55: MIT  found in  nodist/LICENSE.txt
+INFO: 2023/02/15 02:54:59 github.go:499: LicenseScore  is  :  1
+INFO: 2023/02/15 02:54:59 github.go:77: Setting number of commits :  8005
+INFO: 2023/02/15 02:54:59 github.go:126: Setting number of releases :  2
+INFO: 2023/02/15 02:54:59 github.go:147: Finding responsiveness score :  0.0002498126405196103
+INFO: 2023/02/15 02:54:59 github.go:198: Setting number of assignees :  9
+INFO: 2023/02/15 02:54:59 github.go:252: Setting number of contributors :  29
+INFO: 2023/02/15 02:54:59 github.go:274: Finding responsiveness score :  0.3
+INFO: 2023/02/15 02:55:21 git.go:55: MIT  found in  lodash/.git/objects/pack/pack-8e12fb8d8cc7bc78c83b67738bc876c317994aca.idx
+INFO: 2023/02/15 02:55:21 git.go:55: MIT  found in  lodash/LICENSE
+INFO: 2023/02/15 02:55:21 github.go:499: LicenseScore  is  :  1
+INFO: 2023/02/15 02:55:22 github.go:331: Setting number of depandencies :  79
+INFO: 2023/02/15 02:55:22 github.go:387: Setting number of Dev depandancies :  129
+INFO: 2023/02/15 02:55:22 github.go:415: Finding RampUp score :  1
+INFO: 2023/02/15 02:55:22 github.go:553: Setting the repository version :  3.0.0
+INFO: 2023/02/15 02:55:22 github.go:591: Finding Correctness score :  0.25
+INFO: 2023/02/15 02:55:22 github.go:613: Finding overall score :  0.38
+INFO: 2023/02/15 02:55:23 github.go:331: Setting number of depandencies :  79
+INFO: 2023/02/15 02:55:23 github.go:387: Setting number of Dev depandancies :  129
+INFO: 2023/02/15 02:55:23 github.go:415: Finding RampUp score :  1
+INFO: 2023/02/15 02:55:23 github.go:198: Setting number of assignees :  9
+INFO: 2023/02/15 02:55:23 github.go:252: Setting number of contributors :  29
+INFO: 2023/02/15 02:55:23 github.go:274: Finding responsiveness score :  0.3
+INFO: 2023/02/15 02:55:23 github.go:77: Setting number of commits :  8005
+INFO: 2023/02/15 02:55:24 github.go:126: Setting number of releases :  2
+INFO: 2023/02/15 02:55:24 github.go:147: Finding responsiveness score :  0.0002498126405196103
+INFO: 2023/02/15 02:55:24 github.go:553: Setting the repository version :  3.0.0
+INFO: 2023/02/15 02:55:24 github.go:591: Finding Correctness score :  0.25
+INFO: 2023/02/15 02:55:55 git.go:55: MIT  found in  lodash/.git/objects/pack/pack-8e12fb8d8cc7bc78c83b67738bc876c317994aca.idx
+INFO: 2023/02/15 02:55:55 git.go:55: MIT  found in  lodash/LICENSE
+INFO: 2023/02/15 02:55:55 github.go:499: LicenseScore  is  :  1
+INFO: 2023/02/15 02:55:55 github.go:77: Setting number of commits :  740
+INFO: 2023/02/15 02:55:55 github.go:126: Setting number of releases :  55
+INFO: 2023/02/15 02:55:55 github.go:147: Finding responsiveness score :  0.07422402159244265
+INFO: 2023/02/15 02:55:56 github.go:198: Setting number of assignees :  176
+INFO: 2023/02/15 02:55:56 github.go:252: Setting number of contributors :  29
+INFO: 2023/02/15 02:55:56 github.go:274: Finding responsiveness score :  1
+INFO: 2023/02/15 02:56:01 git.go:55: Public Domain  found in  cloudinary_npm/samples/photo_album/public/cloudinary_cors.html
+INFO: 2023/02/15 02:56:01 git.go:55: MIT  found in  cloudinary_npm/.git/objects/pack/pack-a02e92bcabb88a312b45795374ac800fccfa26a0.pack
+INFO: 2023/02/15 02:56:01 git.go:55: MIT  found in  cloudinary_npm/README.md
+INFO: 2023/02/15 02:56:01 github.go:499: LicenseScore  is  :  1
+INFO: 2023/02/15 02:56:01 github.go:331: Setting number of depandencies :  79
+INFO: 2023/02/15 02:56:02 github.go:387: Setting number of Dev depandancies :  27
+INFO: 2023/02/15 02:56:02 github.go:415: Finding RampUp score :  0.3375
+INFO: 2023/02/15 02:56:02 github.go:553: Setting the repository version :  1.2.3
+INFO: 2023/02/15 02:56:02 github.go:591: Finding Correctness score :  0.1428571428571429
+INFO: 2023/02/15 02:56:02 github.go:613: Finding overall score :  0.39057142857142857
+INFO: 2023/02/15 02:56:02 github.go:331: Setting number of depandencies :  79
+INFO: 2023/02/15 02:56:03 github.go:387: Setting number of Dev depandancies :  27
+INFO: 2023/02/15 02:56:03 github.go:415: Finding RampUp score :  0.3375
+INFO: 2023/02/15 02:56:03 github.go:198: Setting number of assignees :  176
+INFO: 2023/02/15 02:56:03 github.go:252: Setting number of contributors :  29
+INFO: 2023/02/15 02:56:03 github.go:274: Finding responsiveness score :  1
+INFO: 2023/02/15 02:56:03 github.go:77: Setting number of commits :  740
+INFO: 2023/02/15 02:56:03 github.go:126: Setting number of releases :  55
+INFO: 2023/02/15 02:56:03 github.go:147: Finding responsiveness score :  0.07422402159244265
+INFO: 2023/02/15 02:56:04 github.go:553: Setting the repository version :  1.2.3
+INFO: 2023/02/15 02:56:04 github.go:591: Finding Correctness score :  0.1428571428571429
+INFO: 2023/02/15 02:56:08 git.go:55: Public Domain  found in  cloudinary_npm/samples/photo_album/public/cloudinary_cors.html
+INFO: 2023/02/15 02:56:08 git.go:55: MIT  found in  cloudinary_npm/.git/objects/pack/pack-a02e92bcabb88a312b45795374ac800fccfa26a0.pack
+INFO: 2023/02/15 02:56:08 git.go:55: MIT  found in  cloudinary_npm/README.md
+INFO: 2023/02/15 02:56:08 github.go:499: LicenseScore  is  :  1
+ERROR: 2023/02/15 02:56:08 Main.go:42: error in opeing file:  /tmp/test_input2433958284
+ERROR: 2023/02/15 02:56:08 Main.go:42: error in opeing file:  xxxx
+ERROR: 2023/02/15 02:56:08 Main.go:45: error in opeing file
