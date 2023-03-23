@@ -1,5 +1,5 @@
-# ece461-teamRepo
-The following repository will be utilized by my teammates
-
---Kahaan Patel
---Ishaan Jain
+# ECE49595 NPM and Github package web-service Project
+## Docker Compose Up
+- All components have necessary dockerfiles
+- To run full docker `docker compose up`
+- Web-service will run on port 4200.
