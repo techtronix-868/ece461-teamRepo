@@ -60,10 +60,10 @@ func readInput(inputFile string)[]string{
     return fileLines
 }
 
-func main(){ 
+func main(){
     log.Init(os.Getenv("LOG_FILE"))
     inputFile := os.Args[1]
-    
+
     links:=readInput(inputFile)
     if links == nil {
     	return
@@ -73,5 +73,5 @@ func main(){
     fmt.Println(output)
 
     os.Exit(0)
-   
+
 }

@@ -5,27 +5,26 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	
+
 	"net/http"
 	"strconv"
 	"strings"
-	"os"
 	lg "app/lg"
 	git "app/git"
 )
 
 type Connect_npm struct {
 	Package 	 string
-	Version      string 
-	Maintainers  int    
-	Contributors int    
-	License      string 
-	Dependencies int    
-	DevDeps      int    
-	Releases     int    
-	TestScript   bool   
-	Commits      int    
-	Downloads    int    
+	Version      string
+	Maintainers  int
+	Contributors int
+	License      string
+	Dependencies int
+	DevDeps      int
+	Releases     int
+	TestScript   bool
+	Commits      int
+	Downloads    int
 	URL			 string
 	Homepage 	 string
 	CommitFreq	 float64
@@ -105,7 +104,6 @@ type Package struct {
 func (cn Connect_npm) Data(packageName string) *nd.NdJson {
 	cn.URL = packageName
 
-	lg.Init(os.Getenv("LOG_FILE"))
 
 	// The following makes an API call to NPM site and recieves JSON response.
 	res1 := strings.Split(packageName,"/")
@@ -121,7 +119,7 @@ func (cn Connect_npm) Data(packageName string) *nd.NdJson {
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		lg.ErrorLogger.Println("Unable to marshal JSON response to struct in npm.go : ",body)
-		panic(err) 
+		panic(err)
 		return nil
 	}
 
@@ -165,7 +163,7 @@ func (cn Connect_npm) Data(packageName string) *nd.NdJson {
 	}
 	lg.InfoLogger.Println("Setting Downloads: ",cn.Downloads)
 	cn.Homepage = pkg.Collected.Metadata.Links.Repository
-	
+
 	cn.ReleaseFreq=pkg.Evaluation.Maintenance.ReleaseFreq
 	cn.CommitFreq=pkg.Evaluation.Maintenance.CommitFreq
 
@@ -174,7 +172,7 @@ func (cn Connect_npm) Data(packageName string) *nd.NdJson {
 }
 
 func (cn Connect_npm) Score() *nd.NdJson {
-	
+
 	if(cn.get_License_score() == 0.0){
 		res := git.Clone(cn.Homepage)
 		if res {
@@ -200,11 +198,11 @@ func Contains(sl []string, name string) bool {
 func (cn Connect_npm) get_License_score() float64 {
 	cmpLicenses := []string{"Public Domain","MIT","X11","BSD-new","Apache 2.0","LGPLv2.1","LGPLv2.1+", "LGPLv3", "LGPLv3+"}
 
-	
+
 	if Contains(cmpLicenses,cn.License){
 		return 1.0
 	}
-	
+
 	return 0.0
 
 }
@@ -234,7 +232,7 @@ func (cn Connect_npm) get_correctness() float64{
 	if patch != 0 {
 		denominator *= patch
 	}
-	
+
 	score := 1 - ((major + minor + patch) / (denominator + 1))
 	return float64(score)
 }

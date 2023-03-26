@@ -3,7 +3,7 @@ package github
 import (
     "context"
     "fmt"
-	
+
 	"strings"
 	"strconv"
     "github.com/machinebox/graphql"
@@ -32,9 +32,8 @@ func roundFloat(val float64, prec uint) float64 {
 //Function to get total number of commits in a repository
 func Get_com(owner string, name string) int {
     graphqlClient := graphql.NewClient("https://api.github.com/graphql")
-	lg.Init(os.Getenv("LOG_FILE"))
-	
-	
+
+
     graphqlRequest := graphql.NewRequest(`
 		query Get_commits($own: String!, $repo: String!) {
 			repository(owner:$own, name:$repo) {
@@ -72,8 +71,8 @@ func Get_com(owner string, name string) int {
 	if err != nil {
 		lg.ErrorLogger.Println("Unable to get round number of commits")
 		return 0
-	}	
-	
+	}
+
 	lg.InfoLogger.Println("Setting number of commits : ",commits)
 	return commits
 
@@ -83,9 +82,8 @@ func Get_releases(owner string, name string) int {
 
 	graphqlClient := graphql.NewClient("https://api.github.com/graphql")
 
-	lg.Init(os.Getenv("LOG_FILE"))
-	
-	
+
+
     graphqlRequest := graphql.NewRequest(`
 	query Get_commits($own: String!, $repo: String!){
 		repository(name:$repo, owner: $own) {
@@ -94,7 +92,7 @@ func Get_releases(owner string, name string) int {
 			}
 		}
 		}
-		
+
     `)
 
 	graphqlRequest.Var("own",owner)
@@ -125,14 +123,13 @@ func Get_releases(owner string, name string) int {
 
 	lg.InfoLogger.Println("Setting number of releases : ",rels)
 
-	return rels	
-		
+	return rels
+
 }
 
 
 func ScoreResponsiveness(owner string,repo string) float64 {
 
-	lg.Init(os.Getenv("LOG_FILE"))
 
 	com := Get_com(owner,repo)
 	releases := Get_releases(owner,repo)
@@ -147,17 +144,16 @@ func ScoreResponsiveness(owner string,repo string) float64 {
 	lg.InfoLogger.Println("Finding responsiveness score : ",score)
 
 	return roundFloat(score,2)
-        
+
 
 
 }
 
 func Get_assignees(owner string, name string) int{
 
-	lg.Init(os.Getenv("LOG_FILE"))
 	graphqlClient := graphql.NewClient("https://api.github.com/graphql")
-	
-	
+
+
     graphqlRequest := graphql.NewRequest(`
 	query Get_commits($own: String!, $repo: String!){
 		repository(name:$repo, owner: $own) {
@@ -166,7 +162,7 @@ func Get_assignees(owner string, name string) int{
 			}
 		}
 		}
-		
+
     `)
 
 	graphqlRequest.Var("own",owner)
@@ -204,11 +200,10 @@ func Get_assignees(owner string, name string) int{
 
 func Get_contributors(owner string, name string) int{
 
-	lg.Init(os.Getenv("LOG_FILE"))
 
 	graphqlClient := graphql.NewClient("https://api.github.com/graphql")
-	
-	
+
+
     graphqlRequest := graphql.NewRequest(`
 
 	query Get_commits($own: String!, $repo: String!){
@@ -220,7 +215,7 @@ func Get_contributors(owner string, name string) int{
 			}
 		}
 		}
-		
+
     `)
 
 	graphqlRequest.Var("own",owner)
@@ -258,7 +253,6 @@ func Get_contributors(owner string, name string) int{
 
 func ScoreBusFactor(owner string, repo string) float64 {
 
-	lg.Init(os.Getenv("LOG_FILE"))
 
 	assign := Get_assignees(owner,repo)
 	contributors := Get_contributors("nullivex","nodist")
@@ -273,7 +267,7 @@ func ScoreBusFactor(owner string, repo string) float64 {
 
 	lg.InfoLogger.Println("Finding responsiveness score : ",score)
 	return roundFloat(score,2)
-        
+
 
 
 }
@@ -281,11 +275,10 @@ func ScoreBusFactor(owner string, repo string) float64 {
 
 func get_dependancies(owner string, name string) int{
 
-	lg.Init(os.Getenv("LOG_FILE"))
 
 	graphqlClient := graphql.NewClient("https://api.github.com/graphql")
-	
-	
+
+
     graphqlRequest := graphql.NewRequest(`
 	query Get_commits($own: String!, $repo: String!){
 	repository(owner:$own, name:$repo) {
@@ -298,7 +291,7 @@ func get_dependancies(owner string, name string) int{
 		}
 	  }
 	}
-		
+
     `)
 
 	graphqlRequest.Var("own",owner)
@@ -338,11 +331,10 @@ func get_dependancies(owner string, name string) int{
 
 func get_devDep(owner string, name string) int {
 
-	lg.Init(os.Getenv("LOG_FILE"))
 
 	graphqlClient := graphql.NewClient("https://api.github.com/graphql")
-	
-	
+
+
     graphqlRequest := graphql.NewRequest(`
 	query Get_commits($own: String!, $repo: String!){
 		repository(owner:$own, name:$repo) {
@@ -360,7 +352,7 @@ func get_devDep(owner string, name string) int {
 		  }
 		}
 	  }
-		
+
     `)
 
 	graphqlRequest.Var("own",owner)
@@ -386,19 +378,18 @@ func get_devDep(owner string, name string) int {
 
 	lg.InfoLogger.Println("Setting number of Dev depandancies : ",devDep)
 
-    
+
 	if devDep > 0 {
 		return devDep
 	}else {
 		return 0
 	}
-	
+
 
 }
 
 func scoreRampUp(owner string,repo string) float64 {
 
-	lg.Init(os.Getenv("LOG_FILE"))
 
 	dependencies := get_dependancies("nullivex","nodist")
 	devDep := get_devDep(owner,repo)
@@ -415,13 +406,12 @@ func scoreRampUp(owner string,repo string) float64 {
 	lg.InfoLogger.Println("Finding RampUp score : ",score)
 
 	return roundFloat(score,2)
-        
+
 
 
 }
 func get_License(owner string, name string) string{
 
-	lg.Init(os.Getenv("LOG_FILE"))
 
 	url := fmt.Sprintf("https://github.com/%s/%s",owner,name)
 
@@ -430,21 +420,21 @@ func get_License(owner string, name string) string{
 	}
 
 
-	
+
 
 	// graphqlClient := graphql.NewClient("https://api.github.com/graphql")
-	
-	
+
+
     // graphqlRequest := graphql.NewRequest(`
 	// query Get_commits($own: String!, $repo: String!){
 	// 		repository(name: $repo, owner: $own) {
 	// 		  licenseInfo {
 	// 			name
 	// 		  }
-			  
+
 	// 	}
 	// }
-		
+
     // `)
 
 	// graphqlRequest.Var("own",owner)
@@ -491,10 +481,9 @@ func get_License(owner string, name string) string{
 
 
 func scoreLicense(owner string, repo string) float64{
-	lg.Init(os.Getenv("LOG_FILE"))
 
 	license := get_License(owner,repo)
-	
+
 	if "present" == license {
 		  lg.InfoLogger.Println("LicenseScore  is  : ",1)
 		  return 1.0
@@ -507,11 +496,10 @@ func scoreLicense(owner string, repo string) float64{
 
 func get_tag(owner string, name string) string {
 
-	lg.Init(os.Getenv("LOG_FILE"))
 
 	graphqlClient := graphql.NewClient("https://api.github.com/graphql")
-	
-	
+
+
     graphqlRequest := graphql.NewRequest(`
 	query Get_commits($own: String!, $repo: String!){
 			repository(name: $repo, owner: $own) {
@@ -520,10 +508,10 @@ func get_tag(owner string, name string) string {
 					tagName
 				}
 			  }
-			  
+
 		}
 	}
-		
+
     `)
 
 	graphqlRequest.Var("own",owner)
@@ -562,7 +550,6 @@ func get_tag(owner string, name string) string {
 
 func scoreCorrectness(owner string, repo string) float64{
 
-	lg.Init(os.Getenv("LOG_FILE"))
 
 	version := get_tag(owner,repo)
 
@@ -585,7 +572,7 @@ func scoreCorrectness(owner string, repo string) float64{
 	if patch != 0 {
 		denominator *= patch
 	}
-	
+
 	score := 1 - ((major + minor + patch) / (denominator + 1))
 
 	lg.InfoLogger.Println("Finding Correctness score : ",float64(score))
@@ -594,8 +581,7 @@ func scoreCorrectness(owner string, repo string) float64{
 
 func Score(URL string) *nd.NdJson {
 
-	lg.Init(os.Getenv("LOG_FILE"))
-	
+
 	cuttingByTwo := strings.FieldsFunc(URL, func(r rune) bool {
 		if r == '/' {
 			return true
@@ -616,4 +602,3 @@ func Score(URL string) *nd.NdJson {
 
 	return nd
 }
-

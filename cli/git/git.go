@@ -28,14 +28,13 @@ func Clone(url string) bool {
 			return true
 		}
 	}
-	
-	
+
+
     return false
 }
 
 
 func findLicense(license string , folder string) bool {
-	lg.Init(os.Getenv("LOG_FILE"))
 	root := folder
 	word := license
 	var isFound bool
@@ -44,7 +43,7 @@ func findLicense(license string , folder string) bool {
 		if err != nil {
 			return err
 		}
-		
+
 		if !info.IsDir() {
             fileContents, err := ioutil.ReadFile(root)
             if err != nil {
@@ -65,5 +64,3 @@ func findLicense(license string , folder string) bool {
 
     return isFound
 }
-
-
