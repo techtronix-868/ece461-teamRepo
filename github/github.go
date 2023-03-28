@@ -425,6 +425,12 @@ func get_License(owner string, name string) string{
 
 	url := fmt.Sprintf("https://github.com/%s/%s",owner,name)
 
+	defer func() {
+		if err := recover(); err != nil {
+		
+		}
+	}()
+
 	if git.Clone(url){
 		return "present"
 	}
