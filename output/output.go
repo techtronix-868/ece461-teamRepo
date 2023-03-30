@@ -10,12 +10,13 @@ import (
 
 type NdJson struct {
 	URL                   string
-	Overall_score         float64
-	Ramp_up_score         float64
-	Bus_factor            float64
-	Responsiveness        float64
-	License_compatability float64
-	Correctness           float64
+	NET_SCORE             float64
+	RAMP_UP_SCORE         float64
+	CORRECTNESS_SCORE           float64
+	BUS_FACTOR_SCORE            float64
+	RESPONSIVE_MAINTAINER_SCORE        float64
+	LICENSE_SCORE float64
+	
 }
 
 type ByOverallScore []*NdJson
@@ -30,17 +31,17 @@ func (a ByOverallScore) Swap(i, j int) {
 
 func (a ByOverallScore) Less(i, j int) bool {
 	// Change the sign to < for ascending.
-	return a[i].Overall_score > a[j].Overall_score
+	return a[i].NET_SCORE > a[j].NET_SCORE
 }
 
-func (nd *NdJson) DataToNd(_package string, Overall_score float64, _Ramp_up_score float64, _Bus_factor float64, _Responsiveness float64, _Correctness float64, _License_compatability float64) *NdJson {
+func (nd *NdJson) DataToNd(_package string, _NET_SCORE float64, _Ramp_up_score float64, _Bus_factor float64, _Responsiveness float64, _Correctness float64, _License_compatability float64) *NdJson {
 	nd.URL = _package
-	nd.Overall_score = math.Round(Overall_score*100)/100
-	nd.Ramp_up_score =  math.Round(_Ramp_up_score*100)/100
-	nd.Bus_factor =  math.Round(_Bus_factor*100)/100
-	nd.Responsiveness =  math.Round(_Responsiveness*100)/100
-	nd.License_compatability =  math.Round(_License_compatability*100)/100
-	nd.Correctness =  math.Round(_Correctness*100)/100
+	nd.NET_SCORE = math.Round(_NET_SCORE*100)/100
+	nd.RAMP_UP_SCORE =  math.Round(_Ramp_up_score*100)/100
+	nd.BUS_FACTOR_SCORE =  math.Round(_Bus_factor*100)/100
+	nd.RESPONSIVE_MAINTAINER_SCORE =  math.Round(_Responsiveness*100)/100
+	nd.LICENSE_SCORE =  math.Round(_License_compatability*100)/100
+	nd.CORRECTNESS_SCORE =  math.Round(_Correctness*100)/100
 
 	return nd
 }
