@@ -34,20 +34,32 @@ func Get_com(owner string, name string) int {
     graphqlClient := graphql.NewClient("https://api.github.com/graphql")
 	lg.Init(os.Getenv("LOG_FILE"))
 	
-	
     graphqlRequest := graphql.NewRequest(`
 		query Get_commits($own: String!, $repo: String!) {
 			repository(owner:$own, name:$repo) {
-			object(expression:"master") {
-				... on Commit {
-				history {
-					totalCount
-				}
+				defaultBranchRef {
+					target {
+						... on Commit {
+							history {
+								totalCount
+							}
+						}
+					}
 				}
 			}
-			}
+			
 		}
     `)
+
+	// repository(owner:$own, name:$repo) {
+	// 	object(expression:"master") {
+	// 		... on Commit {
+	// 		history {
+	// 			totalCount
+	// 		}
+	// 		}
+	// 	}
+	// 	}
 
 	graphqlRequest.Var("own",owner)
 	graphqlRequest.Var("repo",name)
