@@ -1,42 +1,38 @@
 package openapi
 
 import (
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/joho/godotenv"
-	"log"
-	"os"
 	"testing"
 )
 
 func TestConnectTCPSocket(t *testing.T) {
 	// Load environment variables
-	err := godotenv.Load()
-	/*
-		if err != nil {
-			log.Fatal("Error loading .env file")
-		}
+	/*err := godotenv.Load()
 
-		dbUser := os.Getenv("DB_USER")
-		dbPass := os.Getenv("DB_PASS")
-		dbName := os.Getenv("DB_NAME")
-		dbPort := os.Getenv("DB_PORT")
-		instanceHost := os.Getenv("INSTANCE_HOST")
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 
-		os.Setenv("DB_USER", dbUser)
-		os.Setenv("DB_PASS", dbPass)
-		os.Setenv("DB_NAME", dbName)
-		os.Setenv("DB_PORT", dbPort)
-		os.Setenv("INSTANCE_HOST", instanceHost)
+	dbUser := os.Getenv("DB_USER")
+	dbPass := os.Getenv("DB_PASS")
+	dbName := os.Getenv("DB_NAME")
+	dbPort := os.Getenv("DB_PORT")
+	instanceHost := os.Getenv("INSTANCE_HOST")
 
-		db, err := connectTCPSocket()
-		if err != nil {
-			t.Fatalf("Failed to connect to MySQL instance: %v", err)
-		}
+	os.Setenv("DB_USER", dbUser)
+	os.Setenv("DB_PASS", dbPass)
+	os.Setenv("DB_NAME", dbName)
+	os.Setenv("DB_PORT", dbPort)
+	os.Setenv("INSTANCE_HOST", instanceHost)
 
-		defer db.Close()
+	db, err := connectTCPSocket()
+	if err != nil {
+		t.Fatalf("Failed to connect to MySQL instance: %v", err)
+	}
 
-		err = db.Ping()
-		if err != nil {
-			t.Fatalf("Failed to ping MySQL instance: %v", err)
-		} */
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		t.Fatalf("Failed to ping MySQL instance: %v", err)
+	} */
 }
