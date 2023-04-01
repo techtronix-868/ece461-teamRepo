@@ -1,2 +1,4 @@
 *.exe 
 *.jar
+*.env
+cloud-sql-proxy

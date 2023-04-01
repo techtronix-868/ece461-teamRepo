@@ -4,15 +4,28 @@ import (
 	"os"
 	"testing"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/joho/godotenv"
+	"log"
 )
 
 func TestConnectTCPSocket(t *testing.T) {
-	// Set environment variables for testing
-	os.Setenv("DB_USER", "test")
-	os.Setenv("DB_PASS", "QmKw&vcFUZH2")
-	os.Setenv("DB_NAME", "packagedir")
-	os.Setenv("DB_PORT", "3306")
-	os.Setenv("INSTANCE_HOST", "localhost")
+	// Load environment variables
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	dbUser := os.Getenv("DB_USER")
+	dbPass := os.Getenv("DB_PASS")
+	dbName := os.Getenv("DB_NAME")
+	dbPort := os.Getenv("DB_PORT")
+	instanceHost := os.Getenv("INSTANCE_HOST")
+
+	os.Setenv("DB_USER", dbUser)
+	os.Setenv("DB_PASS", dbPass)
+	os.Setenv("DB_NAME", dbName)
+	os.Setenv("DB_PORT", dbPort)
+	os.Setenv("INSTANCE_HOST", instanceHost)
 
 	db, err := connectTCPSocket()
 	if err != nil {
