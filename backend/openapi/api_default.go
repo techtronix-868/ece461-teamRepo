@@ -17,10 +17,13 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/mabaums/ece461-web/backend/datastore"
+
 	"github.com/gin-gonic/gin"
 )
 
 var db *sql.DB
+var ds datastore.InMemoryDatstore
 
 func initDB() error {
 	var err error
@@ -112,7 +115,7 @@ func PackageUpdate(c *gin.Context) {
 
 // PackagesList - Get the packages from the registry.
 func PackagesList(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{})
+	c.JSON(http.StatusOK, gin.H{"packges": ds.GetPackages()})
 }
 
 // RegistryReset - Reset the registry
