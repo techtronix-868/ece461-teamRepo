@@ -1,6 +1,6 @@
 /**
- * ECE 461 - Fall 2021 - Project 2
- * API for ECE 461/Fall 2021/Project 2: A Trustworthy Module Registry
+ * ECE 461 - Spring 2023 - Project 2
+ * API for ECE 461/Spring 2023/Project 2: A Trustworthy Module Registry
  *
  * OpenAPI spec version: 2.0.0
  * Contact: davisjam@purdue.edu
@@ -21,6 +21,7 @@ import { AuthenticationRequest } from '../model/authenticationRequest';
 import { AuthenticationToken } from '../model/authenticationToken';
 import { EnumerateOffset } from '../model/enumerateOffset';
 import { ModelPackage } from '../model/modelPackage';
+import { PackageData } from '../model/packageData';
 import { PackageHistoryEntry } from '../model/packageHistoryEntry';
 import { PackageID } from '../model/packageID';
 import { PackageMetadata } from '../model/packageMetadata';
@@ -66,7 +67,7 @@ export class DefaultService {
 
     /**
      * 
-     * 
+     * Create an access token.
      * @param body 
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
@@ -114,20 +115,23 @@ export class DefaultService {
     /**
      * Delete all versions of this package.
      * 
-     * @param name 
      * @param xAuthorization 
+     * @param name 
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      */
-    public packageByNameDelete(name: PackageName, xAuthorization?: AuthenticationToken, observe?: 'body', reportProgress?: boolean): Observable<any>;
-    public packageByNameDelete(name: PackageName, xAuthorization?: AuthenticationToken, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<any>>;
-    public packageByNameDelete(name: PackageName, xAuthorization?: AuthenticationToken, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<any>>;
-    public packageByNameDelete(name: PackageName, xAuthorization?: AuthenticationToken, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
+    public packageByNameDelete(xAuthorization: AuthenticationToken, name: PackageName, observe?: 'body', reportProgress?: boolean): Observable<any>;
+    public packageByNameDelete(xAuthorization: AuthenticationToken, name: PackageName, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<any>>;
+    public packageByNameDelete(xAuthorization: AuthenticationToken, name: PackageName, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<any>>;
+    public packageByNameDelete(xAuthorization: AuthenticationToken, name: PackageName, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
+
+        if (xAuthorization === null || xAuthorization === undefined) {
+            throw new Error('Required parameter xAuthorization was null or undefined when calling packageByNameDelete.');
+        }
 
         if (name === null || name === undefined) {
             throw new Error('Required parameter name was null or undefined when calling packageByNameDelete.');
         }
-
 
         let headers = this.defaultHeaders;
         if (xAuthorization !== undefined && xAuthorization !== null) {
@@ -164,15 +168,18 @@ export class DefaultService {
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      */
-    public packageByNameGet(name: PackageName, xAuthorization?: AuthenticationToken, observe?: 'body', reportProgress?: boolean): Observable<Array<PackageHistoryEntry>>;
-    public packageByNameGet(name: PackageName, xAuthorization?: AuthenticationToken, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<Array<PackageHistoryEntry>>>;
-    public packageByNameGet(name: PackageName, xAuthorization?: AuthenticationToken, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<Array<PackageHistoryEntry>>>;
-    public packageByNameGet(name: PackageName, xAuthorization?: AuthenticationToken, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
+    public packageByNameGet(name: PackageName, xAuthorization: AuthenticationToken, observe?: 'body', reportProgress?: boolean): Observable<Array<PackageHistoryEntry>>;
+    public packageByNameGet(name: PackageName, xAuthorization: AuthenticationToken, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<Array<PackageHistoryEntry>>>;
+    public packageByNameGet(name: PackageName, xAuthorization: AuthenticationToken, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<Array<PackageHistoryEntry>>>;
+    public packageByNameGet(name: PackageName, xAuthorization: AuthenticationToken, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
 
         if (name === null || name === undefined) {
             throw new Error('Required parameter name was null or undefined when calling packageByNameGet.');
         }
 
+        if (xAuthorization === null || xAuthorization === undefined) {
+            throw new Error('Required parameter xAuthorization was null or undefined when calling packageByNameGet.');
+        }
 
         let headers = this.defaultHeaders;
         if (xAuthorization !== undefined && xAuthorization !== null) {
@@ -203,6 +210,61 @@ export class DefaultService {
     }
 
     /**
+     * Get any packages fitting the regular expression.
+     * Search for a package using regular expression over package names and READMEs. This is similar to search by name.
+     * @param body 
+     * @param xAuthorization 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     */
+    public packageByRegExGet(body: string, xAuthorization: AuthenticationToken, observe?: 'body', reportProgress?: boolean): Observable<Array<PackageMetadata>>;
+    public packageByRegExGet(body: string, xAuthorization: AuthenticationToken, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<Array<PackageMetadata>>>;
+    public packageByRegExGet(body: string, xAuthorization: AuthenticationToken, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<Array<PackageMetadata>>>;
+    public packageByRegExGet(body: string, xAuthorization: AuthenticationToken, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
+
+        if (body === null || body === undefined) {
+            throw new Error('Required parameter body was null or undefined when calling packageByRegExGet.');
+        }
+
+        if (xAuthorization === null || xAuthorization === undefined) {
+            throw new Error('Required parameter xAuthorization was null or undefined when calling packageByRegExGet.');
+        }
+
+        let headers = this.defaultHeaders;
+        if (xAuthorization !== undefined && xAuthorization !== null) {
+            headers = headers.set('X-Authorization', String(xAuthorization));
+        }
+
+        // to determine the Accept header
+        let httpHeaderAccepts: string[] = [
+            'application/json'
+        ];
+        const httpHeaderAcceptSelected: string | undefined = this.configuration.selectHeaderAccept(httpHeaderAccepts);
+        if (httpHeaderAcceptSelected != undefined) {
+            headers = headers.set('Accept', httpHeaderAcceptSelected);
+        }
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected != undefined) {
+            headers = headers.set('Content-Type', httpContentTypeSelected);
+        }
+
+        return this.httpClient.request<Array<PackageMetadata>>('post',`${this.basePath}/package/byRegEx`,
+            {
+                body: body,
+                withCredentials: this.configuration.withCredentials,
+                headers: headers,
+                observe: observe,
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
      * 
      * 
      * @param body 
@@ -210,10 +272,10 @@ export class DefaultService {
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      */
-    public packageCreate(body: ModelPackage, xAuthorization: AuthenticationToken, observe?: 'body', reportProgress?: boolean): Observable<PackageMetadata>;
-    public packageCreate(body: ModelPackage, xAuthorization: AuthenticationToken, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<PackageMetadata>>;
-    public packageCreate(body: ModelPackage, xAuthorization: AuthenticationToken, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<PackageMetadata>>;
-    public packageCreate(body: ModelPackage, xAuthorization: AuthenticationToken, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
+    public packageCreate(body: PackageData, xAuthorization: AuthenticationToken, observe?: 'body', reportProgress?: boolean): Observable<ModelPackage>;
+    public packageCreate(body: PackageData, xAuthorization: AuthenticationToken, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<ModelPackage>>;
+    public packageCreate(body: PackageData, xAuthorization: AuthenticationToken, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<ModelPackage>>;
+    public packageCreate(body: PackageData, xAuthorization: AuthenticationToken, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
 
         if (body === null || body === undefined) {
             throw new Error('Required parameter body was null or undefined when calling packageCreate.');
@@ -246,7 +308,7 @@ export class DefaultService {
             headers = headers.set('Content-Type', httpContentTypeSelected);
         }
 
-        return this.httpClient.request<PackageMetadata>('post',`${this.basePath}/package`,
+        return this.httpClient.request<ModelPackage>('post',`${this.basePath}/package`,
             {
                 body: body,
                 withCredentials: this.configuration.withCredentials,
@@ -260,20 +322,23 @@ export class DefaultService {
     /**
      * Delete this version of the package.
      * 
-     * @param id Package ID
      * @param xAuthorization 
+     * @param id Package ID
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      */
-    public packageDelete(id: PackageID, xAuthorization?: AuthenticationToken, observe?: 'body', reportProgress?: boolean): Observable<any>;
-    public packageDelete(id: PackageID, xAuthorization?: AuthenticationToken, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<any>>;
-    public packageDelete(id: PackageID, xAuthorization?: AuthenticationToken, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<any>>;
-    public packageDelete(id: PackageID, xAuthorization?: AuthenticationToken, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
+    public packageDelete(xAuthorization: AuthenticationToken, id: PackageID, observe?: 'body', reportProgress?: boolean): Observable<any>;
+    public packageDelete(xAuthorization: AuthenticationToken, id: PackageID, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<any>>;
+    public packageDelete(xAuthorization: AuthenticationToken, id: PackageID, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<any>>;
+    public packageDelete(xAuthorization: AuthenticationToken, id: PackageID, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
+
+        if (xAuthorization === null || xAuthorization === undefined) {
+            throw new Error('Required parameter xAuthorization was null or undefined when calling packageDelete.');
+        }
 
         if (id === null || id === undefined) {
             throw new Error('Required parameter id was null or undefined when calling packageDelete.');
         }
-
 
         let headers = this.defaultHeaders;
         if (xAuthorization !== undefined && xAuthorization !== null) {
@@ -310,15 +375,18 @@ export class DefaultService {
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      */
-    public packageRate(id: PackageID, xAuthorization?: AuthenticationToken, observe?: 'body', reportProgress?: boolean): Observable<PackageRating>;
-    public packageRate(id: PackageID, xAuthorization?: AuthenticationToken, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<PackageRating>>;
-    public packageRate(id: PackageID, xAuthorization?: AuthenticationToken, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<PackageRating>>;
-    public packageRate(id: PackageID, xAuthorization?: AuthenticationToken, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
+    public packageRate(id: PackageID, xAuthorization: AuthenticationToken, observe?: 'body', reportProgress?: boolean): Observable<PackageRating>;
+    public packageRate(id: PackageID, xAuthorization: AuthenticationToken, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<PackageRating>>;
+    public packageRate(id: PackageID, xAuthorization: AuthenticationToken, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<PackageRating>>;
+    public packageRate(id: PackageID, xAuthorization: AuthenticationToken, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
 
         if (id === null || id === undefined) {
             throw new Error('Required parameter id was null or undefined when calling packageRate.');
         }
 
+        if (xAuthorization === null || xAuthorization === undefined) {
+            throw new Error('Required parameter xAuthorization was null or undefined when calling packageRate.');
+        }
 
         let headers = this.defaultHeaders;
         if (xAuthorization !== undefined && xAuthorization !== null) {
@@ -349,22 +417,25 @@ export class DefaultService {
     }
 
     /**
-     * 
+     * Interact with the package with this ID
      * Return this package.
-     * @param id ID of package to fetch
      * @param xAuthorization 
+     * @param id ID of package to fetch
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      */
-    public packageRetrieve(id: PackageID, xAuthorization?: AuthenticationToken, observe?: 'body', reportProgress?: boolean): Observable<ModelPackage>;
-    public packageRetrieve(id: PackageID, xAuthorization?: AuthenticationToken, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<ModelPackage>>;
-    public packageRetrieve(id: PackageID, xAuthorization?: AuthenticationToken, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<ModelPackage>>;
-    public packageRetrieve(id: PackageID, xAuthorization?: AuthenticationToken, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
+    public packageRetrieve(xAuthorization: AuthenticationToken, id: PackageID, observe?: 'body', reportProgress?: boolean): Observable<ModelPackage>;
+    public packageRetrieve(xAuthorization: AuthenticationToken, id: PackageID, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<ModelPackage>>;
+    public packageRetrieve(xAuthorization: AuthenticationToken, id: PackageID, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<ModelPackage>>;
+    public packageRetrieve(xAuthorization: AuthenticationToken, id: PackageID, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
+
+        if (xAuthorization === null || xAuthorization === undefined) {
+            throw new Error('Required parameter xAuthorization was null or undefined when calling packageRetrieve.');
+        }
 
         if (id === null || id === undefined) {
             throw new Error('Required parameter id was null or undefined when calling packageRetrieve.');
         }
-
 
         let headers = this.defaultHeaders;
         if (xAuthorization !== undefined && xAuthorization !== null) {
@@ -395,27 +466,30 @@ export class DefaultService {
     }
 
     /**
-     * Update this version of the package.
+     * Update this content of the package.
      * The name, version, and ID must match.  The package contents (from PackageData) will replace the previous contents.
      * @param body 
-     * @param id 
      * @param xAuthorization 
+     * @param id 
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      */
-    public packageUpdate(body: ModelPackage, id: PackageID, xAuthorization?: AuthenticationToken, observe?: 'body', reportProgress?: boolean): Observable<any>;
-    public packageUpdate(body: ModelPackage, id: PackageID, xAuthorization?: AuthenticationToken, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<any>>;
-    public packageUpdate(body: ModelPackage, id: PackageID, xAuthorization?: AuthenticationToken, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<any>>;
-    public packageUpdate(body: ModelPackage, id: PackageID, xAuthorization?: AuthenticationToken, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
+    public packageUpdate(body: ModelPackage, xAuthorization: AuthenticationToken, id: PackageID, observe?: 'body', reportProgress?: boolean): Observable<any>;
+    public packageUpdate(body: ModelPackage, xAuthorization: AuthenticationToken, id: PackageID, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<any>>;
+    public packageUpdate(body: ModelPackage, xAuthorization: AuthenticationToken, id: PackageID, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<any>>;
+    public packageUpdate(body: ModelPackage, xAuthorization: AuthenticationToken, id: PackageID, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
 
         if (body === null || body === undefined) {
             throw new Error('Required parameter body was null or undefined when calling packageUpdate.');
         }
 
+        if (xAuthorization === null || xAuthorization === undefined) {
+            throw new Error('Required parameter xAuthorization was null or undefined when calling packageUpdate.');
+        }
+
         if (id === null || id === undefined) {
             throw new Error('Required parameter id was null or undefined when calling packageUpdate.');
         }
-
 
         let headers = this.defaultHeaders;
         if (xAuthorization !== undefined && xAuthorization !== null) {
@@ -451,23 +525,26 @@ export class DefaultService {
     }
 
     /**
-     * Get packages
-     * Get any packages fitting the query.
+     * Get the packages from the registry.
+     * Get any packages fitting the query. Search for packages satisfying the indicated query.  If you want to enumerate all packages, provide an array with a single PackageQuery whose name is \&quot;*\&quot;.  The response is paginated; the response header includes the offset to use in the next query.
      * @param body 
      * @param xAuthorization 
      * @param offset Provide this for pagination. If not provided, returns the first page of results.
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      */
-    public packagesList(body: Array<PackageQuery>, xAuthorization?: AuthenticationToken, offset?: EnumerateOffset, observe?: 'body', reportProgress?: boolean): Observable<Array<PackageMetadata>>;
-    public packagesList(body: Array<PackageQuery>, xAuthorization?: AuthenticationToken, offset?: EnumerateOffset, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<Array<PackageMetadata>>>;
-    public packagesList(body: Array<PackageQuery>, xAuthorization?: AuthenticationToken, offset?: EnumerateOffset, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<Array<PackageMetadata>>>;
-    public packagesList(body: Array<PackageQuery>, xAuthorization?: AuthenticationToken, offset?: EnumerateOffset, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
+    public packagesList(body: Array<PackageQuery>, xAuthorization: AuthenticationToken, offset?: EnumerateOffset, observe?: 'body', reportProgress?: boolean): Observable<Array<PackageMetadata>>;
+    public packagesList(body: Array<PackageQuery>, xAuthorization: AuthenticationToken, offset?: EnumerateOffset, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<Array<PackageMetadata>>>;
+    public packagesList(body: Array<PackageQuery>, xAuthorization: AuthenticationToken, offset?: EnumerateOffset, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<Array<PackageMetadata>>>;
+    public packagesList(body: Array<PackageQuery>, xAuthorization: AuthenticationToken, offset?: EnumerateOffset, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
 
         if (body === null || body === undefined) {
             throw new Error('Required parameter body was null or undefined when calling packagesList.');
         }
 
+        if (xAuthorization === null || xAuthorization === undefined) {
+            throw new Error('Required parameter xAuthorization was null or undefined when calling packagesList.');
+        }
 
 
         let queryParameters = new HttpParams({encoder: new CustomHttpUrlEncodingCodec()});
@@ -511,17 +588,20 @@ export class DefaultService {
     }
 
     /**
-     * 
-     * 
+     * Reset the registry
+     * Reset the registry to a system default state.
      * @param xAuthorization 
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      */
-    public registryReset(xAuthorization?: AuthenticationToken, observe?: 'body', reportProgress?: boolean): Observable<any>;
-    public registryReset(xAuthorization?: AuthenticationToken, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<any>>;
-    public registryReset(xAuthorization?: AuthenticationToken, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<any>>;
-    public registryReset(xAuthorization?: AuthenticationToken, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
+    public registryReset(xAuthorization: AuthenticationToken, observe?: 'body', reportProgress?: boolean): Observable<any>;
+    public registryReset(xAuthorization: AuthenticationToken, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<any>>;
+    public registryReset(xAuthorization: AuthenticationToken, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<any>>;
+    public registryReset(xAuthorization: AuthenticationToken, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
 
+        if (xAuthorization === null || xAuthorization === undefined) {
+            throw new Error('Required parameter xAuthorization was null or undefined when calling registryReset.');
+        }
 
         let headers = this.defaultHeaders;
         if (xAuthorization !== undefined && xAuthorization !== null) {
