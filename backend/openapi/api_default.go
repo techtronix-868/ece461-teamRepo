@@ -1,7 +1,7 @@
 /*
- * ECE 461 - Fall 2021 - Project 2
+ * ECE 461 - Spring 2023 - Project 2
  *
- * API for ECE 461/Fall 2021/Project 2: A Trustworthy Module Registry
+ * API for ECE 461/Spring 2023/Project 2: A Trustworthy Module Registry
  *
  * API version: 2.0.0
  * Contact: davisjam@purdue.edu
@@ -11,16 +11,16 @@
 package openapi
 
 import (
-	"github.com/gin-gonic/gin"
-	"net/http"
 	"database/sql"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
+
+	"github.com/gin-gonic/gin"
 )
 
-
-var db *sql.DB 
+var db *sql.DB
 
 func initDB() error {
 	var err error
@@ -56,7 +56,6 @@ func connectTCPSocket() (*sql.DB, error) {
 	dbURI := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true",
 		dbUser, dbPwd, dbTCPHost, dbPort, dbName)
 
-
 	// dbPool is the pool of database connections.
 	dbPool, err := sql.Open("mysql", dbURI)
 	if err != nil {
@@ -66,10 +65,9 @@ func connectTCPSocket() (*sql.DB, error) {
 	return dbPool, nil
 }
 
-
 // CreateAuthToken -
 func CreateAuthToken(c *gin.Context) {
-	c.JSON(http.StatusOK, "string")
+	c.JSON(http.StatusOK, gin.H{})
 }
 
 // PackageByNameDelete - Delete all versions of this package.
@@ -79,6 +77,11 @@ func PackageByNameDelete(c *gin.Context) {
 
 // PackageByNameGet -
 func PackageByNameGet(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{})
+}
+
+// PackageByRegExGet - Get any packages fitting the regular expression.
+func PackageByRegExGet(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})
 }
 
@@ -97,22 +100,22 @@ func PackageRate(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})
 }
 
-// PackageRetrieve -
+// PackageRetrieve - Interact with the package with this ID
 func PackageRetrieve(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})
 }
 
-// PackageUpdate - Update this version of the package.
+// PackageUpdate - Update this content of the package.
 func PackageUpdate(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})
 }
 
-// PackagesList - Get packages
+// PackagesList - Get the packages from the registry.
 func PackagesList(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})
 }
 
-// RegistryReset -
+// RegistryReset - Reset the registry
 func RegistryReset(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})
 }
