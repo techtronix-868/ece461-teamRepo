@@ -1,7 +1,7 @@
 /*
- * ECE 461 - Fall 2021 - Project 2
+ * ECE 461 - Spring 2023 - Project 2
  *
- * API for ECE 461/Fall 2021/Project 2: A Trustworthy Module Registry
+ * API for ECE 461/Spring 2023/Project 2: A Trustworthy Module Registry
  *
  * API version: 2.0.0
  * Contact: davisjam@purdue.edu
@@ -94,6 +94,13 @@ var routes = Routes{
 		http.MethodGet,
 		"/package/byName/:name",
 		PackageByNameGet,
+	},
+
+	{
+		"PackageByRegExGet",
+		http.MethodPost,
+		"/package/byRegEx",
+		PackageByRegExGet,
 	},
 
 	{

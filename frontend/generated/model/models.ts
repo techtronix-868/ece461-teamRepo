@@ -10,6 +10,7 @@ export * from './packageMetadata';
 export * from './packageName';
 export * from './packageQuery';
 export * from './packageRating';
+export * from './packageRegEx';
 export * from './semverRange';
 export * from './user';
 export * from './userAuthenticationInfo';

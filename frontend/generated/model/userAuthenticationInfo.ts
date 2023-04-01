@@ -1,6 +1,6 @@
 /**
- * ECE 461 - Fall 2021 - Project 2
- * API for ECE 461/Fall 2021/Project 2: A Trustworthy Module Registry
+ * ECE 461 - Spring 2023 - Project 2
+ * API for ECE 461/Spring 2023/Project 2: A Trustworthy Module Registry
  *
  * OpenAPI spec version: 2.0.0
  * Contact: davisjam@purdue.edu
