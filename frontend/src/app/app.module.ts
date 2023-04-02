@@ -1,6 +1,9 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 
+import { HttpClientModule } from '@angular/common/http';
+import { BASE_PATH } from 'generated';
+
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { MdbAccordionModule } from 'mdb-angular-ui-kit/accordion';
@@ -42,9 +45,10 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
     MdbTabsModule,
     MdbTooltipModule,
     MdbValidationModule,
-    BrowserAnimationsModule
+    BrowserAnimationsModule,
+    HttpClientModule
   ],
-  providers: [],
+  providers: [{ provide: BASE_PATH, useValue: "http://localhost:8000"}],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
