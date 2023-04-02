@@ -83,7 +83,7 @@ func PackageCreate(name string, version string, content string, url string, jsPr
 		return fmt.Errorf("error verifying database connection: %w", err)
 	}
 
-	stmt, err := db.Prepare("INSERT INTO packages(name, version, content, url, js_program) VALUES(?, ?, ?, ?, ?)")
+	stmt, err := db.Prepare("INSERT INTO package(name, version, content, url, js_program) VALUES(?, ?, ?, ?, ?)")
 	if err != nil {
 		return fmt.Errorf("failed to prepare statement: %w", err)
 	}
