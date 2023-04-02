@@ -105,7 +105,14 @@ func PackageRate(c *gin.Context) {
 
 // PackageRetrieve - Interact with the package with this ID
 func PackageRetrieve(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{})
+	id, _ := c.Params.Get("id")
+	pkg, err := ds.GetPackage(id)
+	if err != nil {
+		c.JSON(int(err.Code), err)
+		return
+	}
+	c.JSON(http.StatusOK, pkg)
+
 }
 
 // PackageUpdate - Update this content of the package.
@@ -115,7 +122,7 @@ func PackageUpdate(c *gin.Context) {
 
 // PackagesList - Get the packages from the registry.
 func PackagesList(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"packges": ds.GetPackages()})
+	c.JSON(http.StatusOK, ds.GetPackages())
 }
 
 // RegistryReset - Reset the registry
