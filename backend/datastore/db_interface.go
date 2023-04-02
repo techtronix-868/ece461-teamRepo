@@ -1,4 +1,4 @@
-package openapi
+package datastore
 
 import (
 	"database/sql"
@@ -6,14 +6,12 @@ import (
 	"log"
 	"net/http"
 	"os"
-
-	"github.com/mabaums/ece461-web/backend/datastore"
-
 	"github.com/gin-gonic/gin"
+	_ "github.com/go-sql-driver/mysql"
+
 )
  
 var db *sql.DB
-var ds datastore.InMemoryDatstore
 
 func initDB() error {
 	var err error
@@ -79,9 +77,33 @@ func PackageByRegExGet(c *gin.Context) {
 }
 
 // PackageCreate -
-func PackageCreate(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{})
+func PackageCreate(name string, version string, content string, url string, jsProgram string) error {
+	err := db.Ping()
+	if err != nil {
+		return fmt.Errorf("error verifying database connection: %w", err)
+	}
+
+	stmt, err := db.Prepare("INSERT INTO packages(name, version, content, url, js_program) VALUES(?, ?, ?, ?, ?)")
+	if err != nil {
+		return fmt.Errorf("failed to prepare statement: %w", err)
+	}
+	defer stmt.Close()
+
+	result, err := stmt.Exec(name, version, content, url, jsProgram)
+	if err != nil {
+		return fmt.Errorf("failed to insert package: %w", err)
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return fmt.Errorf("failed to get ID of newly created package: %w", err)
+	}
+
+	log.Printf("Inserted package with ID %d", id)
+
+	return nil
 }
+
 
 // PackageDelete - Delete this version of the package.
 func PackageDelete(c *gin.Context) {
@@ -105,12 +127,9 @@ func PackageUpdate(c *gin.Context) {
 
 // PackagesList - Get the packages from the registry.
 func PackagesList(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"packges": ds.GetPackages()})
 }
 
 // RegistryReset - Reset the registry
 func RegistryReset(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})
 }
-
-
