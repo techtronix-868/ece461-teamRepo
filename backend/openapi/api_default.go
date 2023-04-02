@@ -115,7 +115,7 @@ func PackageUpdate(c *gin.Context) {
 
 // PackagesList - Get the packages from the registry.
 func PackagesList(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"packges": ds.GetPackages()})
+	c.JSON(http.StatusOK, ds.GetPackages())
 }
 
 // RegistryReset - Reset the registry
