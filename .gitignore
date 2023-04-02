@@ -2,3 +2,4 @@
 *.jar
 *.env
 cloud-sql-proxy
+.vscode

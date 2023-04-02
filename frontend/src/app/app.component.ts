@@ -1,25 +1,10 @@
-import { Component, OnInit } from '@angular/core';
-import { DefaultService, AuthenticationRequest, User, UserAuthenticationInfo} from 'generated';
+import { Component } from '@angular/core';
+
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css'],
-  providers: [DefaultService]
+  styleUrls: ['./app.component.scss']
 })
-export class AppComponent implements OnInit {
+export class AppComponent {
   title = 'frontend';
-
-  constructor(private service: DefaultService) {
-
-  }
-
-  ngOnInit(): void {
-    var user:User = {name: "mabaums", isAdmin: true};
-    var authInfo:UserAuthenticationInfo = {password: "mabaums"};
-    var request:AuthenticationRequest = {user: user, secret: authInfo};
-
-    this.service.createAuthToken(request).subscribe(body=> {
-      console.log(body);
-    });
-  }
 }
