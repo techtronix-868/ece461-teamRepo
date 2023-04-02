@@ -29,7 +29,11 @@ export class AppComponent implements OnInit {
 
     this.service.packagesList(queries, "").subscribe(body => {
       this.packages = body;
-      console.log(this.packages)
+      console.log(this.packages);
     })
+
+    this.service.packageRetrieve("", "1").subscribe(body => {
+      console.log(body);
+    });
   }
 }
