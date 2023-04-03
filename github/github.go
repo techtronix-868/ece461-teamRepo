@@ -559,6 +559,9 @@ func get_tag(owner string, name string) string {
 	//fmt.Println(str)
 
 	parse_1 := strings.SplitAfter(str, "tagName:")
+	if len(parse_1) == 1{
+		return "No version"
+	}
 	//fmt.Println(parse_1[1])
     parse_2 := fmt.Sprint(parse_1[1])
     parse_3 := strings.Split(parse_2,"]")

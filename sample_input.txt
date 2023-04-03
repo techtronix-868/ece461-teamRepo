@@ -1,1 +1,2 @@
-https://github.com/appfeel/jsobjects
+https://github.com/Roserot/test-task-app
+https://github.com/lodash/lodash
