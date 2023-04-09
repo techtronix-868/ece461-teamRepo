@@ -62,18 +62,87 @@ func CreateAuthToken(c *gin.Context) {
 }
 
 // PackageByNameDelete - Delete all versions of this package.
-func PackageByNameDelete(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{})
+func PackageByNameDelete(name string) error {
+	err := db.Ping()
+	if err != nil {
+		return fmt.Errorf("error verifying database connection: %w", err)
+	}
+
+	// Prepare the delete statement
+	stmt, err := db.Prepare("DELETE FROM Packages WHERE Name = ?")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	// Execute the delete statement
+	res, err := stmt.Exec(name)
+	if err != nil {
+		return err
+	}
+
+	// Check if any rows were affected by the delete statement
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		// If no rows were deleted, return a custom error
+		return fmt.Errorf("no package with name %s found", name)
+	}
+
+	return nil
 }
 
+
 // PackageByNameGet -
-func PackageByNameGet(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{})
+func PackageByNameGet(name string) {
+	// Prepare the select statement
+	stmt, err := db.Prepare("SELECT * FROM Packages WHERE Name = ?")
+	if err != nil {
+			return Package{}, err
+	}
+	defer stmt.Close()
+
+	// Execute the select statement and scan the result into a Package struct
+	var packageInfo Package
+	err = stmt.QueryRow(name).Scan(&packageInfo.ID, &packageInfo.Name, &packageInfo.Version, &packageInfo.Description)
+	if err != nil {
+			return Package{}, err
+	}
+
+	return packageInfo, nil
 }
 
 // PackageByRegExGet - Get any packages fitting the regular expression.
-func PackageByRegExGet(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{})
+func PackageByRegExGet(regex string) {
+	// Query for packages that match the regular expression
+	rows, err := db.Query("SELECT Name FROM Packages WHERE Name REGEXP ?", regex)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Collect the results into a slice of strings
+	var packageNames []string
+	for rows.Next() {
+		var packageName string
+		if err := rows.Scan(&packageName); err != nil {
+			return nil, err
+		}
+		packageNames = append(packageNames, packageName)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// If no packages were found, return an error
+	if len(packageNames) == 0 {
+		return nil, fmt.Errorf("no packages found matching the regular expression '%s'", regex)
+	}
+
+	return packageNames, nil
 }
 
 // PackageCreate -
@@ -83,7 +152,7 @@ func PackageCreate(name string, version string, content string, url string, jsPr
 		return fmt.Errorf("error verifying database connection: %w", err)
 	}
 
-	stmt, err := db.Prepare("INSERT INTO package(name, version, content, url, js_program) VALUES(?, ?, ?, ?, ?)")
+	stmt, err := db.Prepare("INSERT INTO packages(name, version, content, url, jsprogram) VALUES(?, ?, ?, ?, ?)")
 	if err != nil {
 		return fmt.Errorf("failed to prepare statement: %w", err)
 	}
@@ -106,13 +175,54 @@ func PackageCreate(name string, version string, content string, url string, jsPr
 
 
 // PackageDelete - Delete this version of the package.
-func PackageDelete(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{})
+func PackageDelete(name string, version string) {
+	// Prepare the delete statement
+	stmt, err := db.Prepare("DELETE FROM Packages WHERE Name = ? AND Version = ?")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	// Execute the delete statement
+	res, err := stmt.Exec(name, version)
+	if err != nil {
+		return err
+	}
+
+	// Check if any rows were affected by the delete statement
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("no rows deleted")
+	}
+
+	return nil
 }
 
 // PackageRate -
-func PackageRate(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{})
+func PackageRate(name string) {
+	// Prepare the SELECT statement
+	stmt, err := db.Prepare("SELECT AVG(Rating) FROM Ratings WHERE PackageName = ?")
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	// Execute the SELECT statement
+	row := stmt.QueryRow(name)
+
+	// Scan the result into a PackageRating struct
+	var rating PackageRating
+	rating.Name = name
+	err = row.Scan(&rating.Rating)
+	if err != nil {
+		return nil, err
+	}
+
+	return &rating, nil
 }
 
 // PackageRetrieve - Interact with the package with this ID
@@ -121,9 +231,34 @@ func PackageRetrieve(c *gin.Context) {
 }
 
 // PackageUpdate - Update this content of the package.
-func PackageUpdate(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{})
+func PackageUpdate(name string, version string, content string, url string, jsProgram string) {
+	// Prepare the update statement
+	stmt, err := db.Prepare("UPDATE Packages SET Content = ?, URL = ?, JSProgram = ? WHERE Name = ? AND Version = ?")
+	if err != nil {
+			return err
+	}
+	defer stmt.Close()
+
+	// Execute the update statement
+	res, err := stmt.Exec(content, url, jsProgram, name, version)
+	if err != nil {
+			return err
+	}
+
+	// Check if any rows were affected by the update statement
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+			return err
+	}
+
+	if rowsAffected == 0 {
+			// If no rows were updated, return an error
+			return fmt.Errorf("no rows updated")
+	}
+
+	return nil
 }
+
 
 // PackagesList - Get the packages from the registry.
 func PackagesList(c *gin.Context) {
