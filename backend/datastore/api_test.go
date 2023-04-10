@@ -1,4 +1,4 @@
-// package datastore
+package api
 
 // import (
 // 	"testing"
@@ -7,7 +7,7 @@
 // 	// "github.com/DATA-DOG/go-sqlmock"
 // 	// _ "github.com/go-sql-driver/mysql"
 //   "github.com/joho/godotenv"
-// 	s
+	
 // )
 
 // func TestConnectTCPSocket(t *testing.T) {
