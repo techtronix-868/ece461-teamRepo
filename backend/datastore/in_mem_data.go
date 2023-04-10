@@ -1,4 +1,4 @@
-package datastore
+package api
 
 import "github.com/mabaums/ece461-web/backend/models"
 
