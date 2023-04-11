@@ -22,10 +22,20 @@ import { MdbTabsModule } from 'mdb-angular-ui-kit/tabs';
 import { MdbTooltipModule } from 'mdb-angular-ui-kit/tooltip';
 import { MdbValidationModule } from 'mdb-angular-ui-kit/validation';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-
+import { NavBarComponent } from './nav-bar/nav-bar.component';
+import { PackageResultsComponent } from './package-results/package-results.component';
+import { MessageBarComponent } from './message-bar/message-bar.component';
+import {MatSnackBarModule } from '@angular/material/snack-bar';
+import { AdvancedSearchComponent } from './advanced-search/advanced-search.component';
+import { HomePageComponent } from './home-page/home-page.component'
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+    NavBarComponent,
+    PackageResultsComponent,
+    MessageBarComponent,
+    AdvancedSearchComponent,
+    HomePageComponent
   ],
   imports: [
     BrowserModule,
@@ -46,7 +56,8 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
     MdbTooltipModule,
     MdbValidationModule,
     BrowserAnimationsModule,
-    HttpClientModule
+    HttpClientModule,
+    MatSnackBarModule
   ],
   providers: [{ provide: BASE_PATH, useValue: "http://localhost:8000"}],
   bootstrap: [AppComponent]

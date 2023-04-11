@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { DefaultService, AuthenticationRequest, User, UserAuthenticationInfo, PackageMetadata, PackageQuery} from 'generated';
+import { NavBarComponent } from './nav-bar/nav-bar.component';
 
 @Component({
   selector: 'app-root',
