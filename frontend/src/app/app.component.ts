@@ -16,6 +16,7 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    /*
     var user:User = {name: "mabaums", isAdmin: true};
     var authInfo:UserAuthenticationInfo = {password: "mabaums"};
     var request:AuthenticationRequest = {User: user, Secret: authInfo};
@@ -35,6 +36,6 @@ export class AppComponent implements OnInit {
 
     this.service.packageRetrieve("", "1").subscribe(body => {
       console.log(body);
-    });
+    }); */
   }
 }
