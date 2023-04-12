@@ -8,9 +8,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 })
 export class NavBarComponent {
   searchText?: string = "";
-  constructor(private _snackBar: MatSnackBar, private router: Router) {
-    this.searchText = "hello";
-  }
+  constructor(private _snackBar: MatSnackBar, private router: Router) {}
 
   search() {
     this.openSnackBar('Searching...', 'X');
