@@ -24,7 +24,6 @@ import { MdbValidationModule } from 'mdb-angular-ui-kit/validation';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { NavBarComponent } from './nav-bar/nav-bar.component';
 import { PackageResultsComponent } from './package-results/package-results.component';
-import { MessageBarComponent } from './message-bar/message-bar.component';
 import {MatSnackBarModule } from '@angular/material/snack-bar';
 import { AdvancedSearchComponent } from './advanced-search/advanced-search.component';
 import { HomePageComponent } from './home-page/home-page.component'
@@ -33,7 +32,6 @@ import { HomePageComponent } from './home-page/home-page.component'
     AppComponent,
     NavBarComponent,
     PackageResultsComponent,
-    MessageBarComponent,
     AdvancedSearchComponent,
     HomePageComponent
   ],
