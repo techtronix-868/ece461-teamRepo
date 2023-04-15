@@ -96,7 +96,7 @@ func PackageCreate(c *gin.Context) {
 
 // PackageDelete - Delete this version of the package.
 func PackageDelete(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{})
+	c.JSON(http.StatusNotFound, gin.H{})
 }
 
 // PackageRate -
