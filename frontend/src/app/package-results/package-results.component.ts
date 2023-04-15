@@ -36,8 +36,29 @@ export class PackageResultsComponent implements OnInit {
       this.packages = body;
       console.log(this.packages);
       this._snackbar.dismiss()
+    }, error => {
+      this._snackbar.open(error.message)
     })
     // TODO: Deal with pagination
+  }
+
+  rate(id: string) {
+    this.service.packageRate(id, "").subscribe(body => {
+      console.log("Rating: ", id)
+      console.log("Reponse: ", body)
+    }, error => {
+      this._snackbar.open(error.message, "ok")
+      //this._snackbar.open()
+    })
+  }
+
+  delete(id: string) {
+    this.service.packageDelete("", id).subscribe(body => {
+      console.log("Deleting: ", id)
+      console.log("Reponse: ", id)
+    }, error => {
+      this._snackbar.open(error.message, "ok")
+    })
   }
 
   //TODO: LATER
