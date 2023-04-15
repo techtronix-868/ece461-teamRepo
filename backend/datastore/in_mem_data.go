@@ -1,6 +1,7 @@
 package datastore
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -14,18 +15,18 @@ type InMemoryDatstore struct {
 }
 
 func (md *InMemoryDatstore) initIfEmpty() {
+	names := []string{"Foo package", "Bar Package", "Test Package", "Mark Package"}
 	if !md.initialized {
 		log.Printf("Initializing InMemoryDatastore")
 		md.initialized = true
-		for i := 0; i <= 20; i++ {
+		for i := 0; i <= 40; i++ {
 			pkg_meta := models.PackageMetadata{
-				Name:    "Package",
-				Version: "1.0.0",
+				Name:    names[i%4],
+				Version: fmt.Sprintf("1.0.%v", i),
 				ID:      strconv.Itoa(i),
 			}
 			pkg_data := models.PackageData{
 				Content:   "Content",
-				URL:       "www.google.com",
 				JSProgram: "string",
 			}
 			pkg := models.Package{Data: pkg_data, Metadata: pkg_meta}
@@ -52,4 +53,29 @@ func (md *InMemoryDatstore) GetPackages() []models.PackageMetadata {
 	}
 
 	return met_pkgs
+}
+
+func packageMatch(pkg_met models.PackageMetadata, name string, version string) bool {
+	if name != pkg_met.Name && name != "*" {
+		return false
+	}
+
+	if version != pkg_met.Version && version != "" {
+		return false
+	}
+
+	return true
+
+}
+
+func (md *InMemoryDatstore) ListPackages(offset int, pagesize int, name string, version string) []models.PackageMetadata {
+	md.initIfEmpty()
+	log.Printf("Listing packages offset: %v, pagesize: %v, name: %v, version: %v\n", offset, pagesize, name, version)
+	found_packages := []models.PackageMetadata{}
+	for _, pkg := range md.packages {
+		if packageMatch(pkg.Metadata, name, version) {
+			found_packages = append(found_packages, pkg.Metadata)
+		}
+	}
+	return found_packages
 }

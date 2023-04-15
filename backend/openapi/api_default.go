@@ -18,6 +18,7 @@ import (
 	"os"
 
 	"github.com/mabaums/ece461-web/backend/datastore"
+	"github.com/mabaums/ece461-web/backend/models"
 
 	"github.com/gin-gonic/gin"
 )
@@ -122,7 +123,13 @@ func PackageUpdate(c *gin.Context) {
 
 // PackagesList - Get the packages from the registry.
 func PackagesList(c *gin.Context) {
-	c.JSON(http.StatusOK, ds.GetPackages())
+	query := []models.PackageQuery{}
+	//_, _ := c.Params.Get("offset")
+	err := c.BindJSON(&query)
+	if err != nil {
+		log.Fatal("Query binding error")
+	}
+	c.JSON(http.StatusOK, ds.ListPackages(0, 0, query[0].Name, query[0].Version))
 }
 
 // RegistryReset - Reset the registry
