@@ -36,13 +36,15 @@ import { MatIconModule } from '@angular/material/icon'
 import {ReactiveFormsModule} from '@angular/forms'
 import { MatInputModule } from '@angular/material/input'
 import { FormsModule } from '@angular/forms';
+import { PackagePageComponent } from './package-page/package-page.component';
 @NgModule({
   declarations: [
     AppComponent,
     NavBarComponent,
     PackageResultsComponent,
     AdvancedSearchComponent,
-    HomePageComponent
+    HomePageComponent,
+    PackagePageComponent
   ],
   imports: [
     BrowserModule,
