@@ -1,4 +1,5 @@
 import { Component, Input, OnInit } from '@angular/core';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, ParamMap } from '@angular/router';
 import { DefaultService, PackageMetadata } from 'generated';
 import { PackageQuery } from 'generated';
@@ -8,20 +9,16 @@ import { PackageQuery } from 'generated';
   styleUrls: ['./package-results.component.scss']
 })
 export class PackageResultsComponent implements OnInit {
-  name?: string;
-  version?: string;
-  regex?: string;
+  @Input() name?: string;
+  @Input() version?: string;
+  @Input() regex?: string;
+
   packages!: PackageMetadata[];
 
-  constructor (private route: ActivatedRoute, private service: DefaultService) {}
+  constructor (private route: ActivatedRoute, private service: DefaultService, private _snackbar: MatSnackBar) {}
 
   ngOnInit(): void {
-    this.route.queryParams.subscribe( params=> {
-      this.name = params['name'];
-      this.version = params['version'];
-      console.log("Searching for ", this.name)
-      this.searchByNameVersion()
-    })
+    this.searchByNameVersion()
   }
   searchByNameVersion() {
     var query:PackageQuery
@@ -38,6 +35,7 @@ export class PackageResultsComponent implements OnInit {
     this.service.packagesList(queries, "").subscribe(body => {
       this.packages = body;
       console.log(this.packages);
+      this._snackbar.dismiss()
     })
     // TODO: Deal with pagination
   }

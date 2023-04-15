@@ -27,6 +27,16 @@ import { PackageResultsComponent } from './package-results/package-results.compo
 import {MatSnackBarModule } from '@angular/material/snack-bar';
 import { AdvancedSearchComponent } from './advanced-search/advanced-search.component';
 import { HomePageComponent } from './home-page/home-page.component'
+import { NgAdvancedSearchModule } from 'ng-advanced-search';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatButtonModule } from '@angular/material/button'
+import { MatRadioModule } from '@angular/material/radio'
+import { MatCheckboxModule } from '@angular/material/checkbox'
+import { MatSelectModule } from '@angular/material/select'
+import { MatIconModule } from '@angular/material/icon'
+import {ReactiveFormsModule} from '@angular/forms'
+import { MatInputModule } from '@angular/material/input'
+import { FormsModule } from '@angular/forms';
 @NgModule({
   declarations: [
     AppComponent,
@@ -37,13 +47,14 @@ import { HomePageComponent } from './home-page/home-page.component'
   ],
   imports: [
     BrowserModule,
+    NgAdvancedSearchModule,
     AppRoutingModule,
     MdbAccordionModule,
     MdbCarouselModule,
     MdbCheckboxModule,
     MdbCollapseModule,
     MdbDropdownModule,
-    MdbFormsModule,
+    MatFormFieldModule,
     MdbModalModule,
     MdbPopoverModule,
     MdbRadioModule,
@@ -54,8 +65,17 @@ import { HomePageComponent } from './home-page/home-page.component'
     MdbTooltipModule,
     MdbValidationModule,
     BrowserAnimationsModule,
+    MatButtonModule,
     HttpClientModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    MatButtonModule,
+    MatRadioModule,
+    MatCheckboxModule,
+    MatSelectModule,
+    MatIconModule,
+    ReactiveFormsModule,
+    MatInputModule,
+    FormsModule
   ],
   providers: [{ provide: BASE_PATH, useValue: "http://localhost:8000"}],
   bootstrap: [AppComponent]
