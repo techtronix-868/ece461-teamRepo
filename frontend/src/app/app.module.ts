@@ -27,7 +27,6 @@ import { PackageResultsComponent } from './package-results/package-results.compo
 import {MatSnackBarModule } from '@angular/material/snack-bar';
 import { AdvancedSearchComponent } from './advanced-search/advanced-search.component';
 import { HomePageComponent } from './home-page/home-page.component'
-import { NgAdvancedSearchModule } from 'ng-advanced-search';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatButtonModule } from '@angular/material/button'
 import { MatRadioModule } from '@angular/material/radio'
@@ -47,7 +46,6 @@ import { FormsModule } from '@angular/forms';
   ],
   imports: [
     BrowserModule,
-    NgAdvancedSearchModule,
     AppRoutingModule,
     MdbAccordionModule,
     MdbCarouselModule,

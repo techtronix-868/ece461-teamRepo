@@ -1,8 +1,5 @@
 import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { NgAsHeader, NgAsAdvancedSearchTerm, NgAsSearchTerm } from 'ng-advanced-search/lib/models';
-import {FormBuilder, FormControl} from '@angular/forms';
-import {FloatLabelType} from '@angular/material/form-field';
 import { PackageResultsComponent } from '../package-results/package-results.component';
 @Component({
   selector: 'app-advanced-search',
