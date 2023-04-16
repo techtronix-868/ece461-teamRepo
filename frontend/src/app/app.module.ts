@@ -37,6 +37,7 @@ import {ReactiveFormsModule} from '@angular/forms'
 import { MatInputModule } from '@angular/material/input'
 import { FormsModule } from '@angular/forms';
 import { PackagePageComponent } from './package-page/package-page.component';
+import { CreatePageComponent } from './create-page/create-page.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -44,7 +45,8 @@ import { PackagePageComponent } from './package-page/package-page.component';
     PackageResultsComponent,
     AdvancedSearchComponent,
     HomePageComponent,
-    PackagePageComponent
+    PackagePageComponent,
+    CreatePageComponent
   ],
   imports: [
     BrowserModule,
