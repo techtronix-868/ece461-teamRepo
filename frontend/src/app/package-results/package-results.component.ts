@@ -1,6 +1,6 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { ActivatedRoute, ParamMap } from '@angular/router';
+import { ActivatedRoute, ParamMap, Route, Router } from '@angular/router';
 import { DefaultService, PackageMetadata } from 'generated';
 import { PackageQuery } from 'generated';
 @Component({
@@ -15,7 +15,7 @@ export class PackageResultsComponent implements OnInit {
 
   packages!: PackageMetadata[];
 
-  constructor (private route: ActivatedRoute, private service: DefaultService, private _snackbar: MatSnackBar) {}
+  constructor (private route: ActivatedRoute, private service: DefaultService, private _snackbar: MatSnackBar, private router: Router) {}
 
   ngOnInit(): void {
     this.searchByNameVersion()
@@ -42,14 +42,16 @@ export class PackageResultsComponent implements OnInit {
     // TODO: Deal with pagination
   }
 
-  rate(id: string) {
+  rate(id: string, name: string) {
+    this.router.navigate(['/package'], {queryParams : {id: id, name: name}})
+    /*
     this.service.packageRate(id, "").subscribe(body => {
       console.log("Rating: ", id)
       console.log("Reponse: ", body)
     }, error => {
       this._snackbar.open(error.message, "ok")
       //this._snackbar.open()
-    })
+    }) */
   }
 
   delete(id: string) {

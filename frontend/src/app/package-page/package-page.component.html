@@ -1,1 +1,7 @@
-<p>package-page works!</p>
+<h1>{{name}}</h1>
+<div *ngFor="let entry of pkg_history">
+    {{entry.User.name}}
+    {{entry.Date}}
+    {{entry.PackageMetadata}}
+    {{entry.Action}}
+</div>

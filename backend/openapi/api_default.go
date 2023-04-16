@@ -16,6 +16,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/mabaums/ece461-web/backend/datastore"
 	"github.com/mabaums/ece461-web/backend/models"
@@ -81,7 +82,35 @@ func PackageByNameDelete(c *gin.Context) {
 
 // PackageByNameGet -
 func PackageByNameGet(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{})
+	pkg_history := []models.PackageHistoryEntry{
+		{
+			User: models.User{
+				Name:    "James Davis",
+				IsAdmin: true,
+			},
+			Date: time.Now(),
+			PackageMetadata: models.PackageMetadata{
+				Name:    "Underscore",
+				Version: "1.0.0",
+				ID:      "underscore",
+			},
+			Action: "DOWNLOAD",
+		},
+		{
+			User: models.User{
+				Name:    "James Davis",
+				IsAdmin: true,
+			},
+			Date: time.Now(),
+			PackageMetadata: models.PackageMetadata{
+				Name:    "Underscore",
+				Version: "1.0.0",
+				ID:      "underscore",
+			},
+			Action: "DOWNLOAD",
+		},
+	}
+	c.JSON(http.StatusOK, pkg_history)
 }
 
 // PackageByRegExGet - Get any packages fitting the regular expression.
