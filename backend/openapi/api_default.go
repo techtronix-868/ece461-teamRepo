@@ -16,8 +16,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/mabaums/ece461-web/backend/datastore"
+	"github.com/mabaums/ece461-web/backend/models"
 
 	"github.com/gin-gonic/gin"
 )
@@ -80,7 +82,35 @@ func PackageByNameDelete(c *gin.Context) {
 
 // PackageByNameGet -
 func PackageByNameGet(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{})
+	pkg_history := []models.PackageHistoryEntry{
+		{
+			User: models.User{
+				Name:    "James Davis",
+				IsAdmin: true,
+			},
+			Date: time.Now(),
+			PackageMetadata: models.PackageMetadata{
+				Name:    "Underscore",
+				Version: "1.0.0",
+				ID:      "underscore",
+			},
+			Action: "DOWNLOAD",
+		},
+		{
+			User: models.User{
+				Name:    "James Davis",
+				IsAdmin: true,
+			},
+			Date: time.Now(),
+			PackageMetadata: models.PackageMetadata{
+				Name:    "Underscore",
+				Version: "1.0.0",
+				ID:      "underscore",
+			},
+			Action: "DOWNLOAD",
+		},
+	}
+	c.JSON(http.StatusOK, pkg_history)
 }
 
 // PackageByRegExGet - Get any packages fitting the regular expression.
@@ -95,12 +125,22 @@ func PackageCreate(c *gin.Context) {
 
 // PackageDelete - Delete this version of the package.
 func PackageDelete(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{})
+	c.JSON(http.StatusNotFound, gin.H{})
 }
 
 // PackageRate -
 func PackageRate(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{})
+	pkg_rating := models.PackageRating{
+		BusFactor:            1,
+		RampUp:               1,
+		Correctness:          1,
+		ResponsiveMaintainer: 1,
+		GoodPinningPractice:  1,
+		NetScore:             1,
+		PullRequest:          1,
+		LicenseScore:         1,
+	}
+	c.JSON(http.StatusOK, pkg_rating)
 }
 
 // PackageRetrieve - Interact with the package with this ID
@@ -122,7 +162,13 @@ func PackageUpdate(c *gin.Context) {
 
 // PackagesList - Get the packages from the registry.
 func PackagesList(c *gin.Context) {
-	c.JSON(http.StatusOK, ds.GetPackages())
+	query := []models.PackageQuery{}
+	//_, _ := c.Params.Get("offset")
+	err := c.BindJSON(&query)
+	if err != nil {
+		log.Fatal("Query binding error")
+	}
+	c.JSON(http.StatusOK, ds.ListPackages(0, 0, query[0].Name, query[0].Version))
 }
 
 // RegistryReset - Reset the registry

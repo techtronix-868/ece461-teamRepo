@@ -12,8 +12,8 @@ To see how to make this your own, look here:
 
 [README](https://openapi-generator.tech)
 
-- API version: 2.0.0
-- Build date: 2023-04-01T17:27:24.292-04:00[America/Indianapolis]
+- API version: 2.3.1
+- Build date: 2023-04-15T14:26:31.305-04:00[America/Indianapolis]
 For more information, please visit [http://davisjam.github.io](http://davisjam.github.io)
 
 ### Running the server

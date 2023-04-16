@@ -1,7 +1,6 @@
 export * from './authenticationRequest';
 export * from './authenticationToken';
 export * from './enumerateOffset';
-export * from './modelError';
 export * from './modelPackage';
 export * from './packageData';
 export * from './packageHistoryEntry';
