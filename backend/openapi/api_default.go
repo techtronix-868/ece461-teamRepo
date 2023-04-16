@@ -130,7 +130,17 @@ func PackageDelete(c *gin.Context) {
 
 // PackageRate -
 func PackageRate(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{})
+	pkg_rating := models.PackageRating{
+		BusFactor:            1,
+		RampUp:               1,
+		Correctness:          1,
+		ResponsiveMaintainer: 1,
+		GoodPinningPractice:  1,
+		NetScore:             1,
+		PullRequest:          1,
+		LicenseScore:         1,
+	}
+	c.JSON(http.StatusOK, pkg_rating)
 }
 
 // PackageRetrieve - Interact with the package with this ID
