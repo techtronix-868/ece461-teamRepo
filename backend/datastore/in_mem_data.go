@@ -1,7 +1,7 @@
 package datastore
 
 import (
-	"log"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
 
@@ -15,7 +15,7 @@ type InMemoryDatstore struct {
 
 func (md *InMemoryDatstore) initIfEmpty() {
 	if !md.initialized {
-		log.Printf("Initializing InMemoryDatastore")
+		log.Info("Initializing InMemoryDatastore")
 		md.initialized = true
 		for i := 0; i <= 20; i++ {
 			pkg_meta := models.PackageMetadata{
@@ -36,7 +36,7 @@ func (md *InMemoryDatstore) initIfEmpty() {
 
 func (md *InMemoryDatstore) GetPackage(id string) (*models.Package, *models.Error) {
 	md.initIfEmpty()
-	log.Printf("Getting Package id: %v\n", id)
+	log.Info("Getting Package id: %v\n", id)
 	for _, pkg := range md.packages {
 		if pkg.Metadata.ID == id {
 			return &pkg, nil

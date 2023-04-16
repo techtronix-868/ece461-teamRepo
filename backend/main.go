@@ -11,13 +11,15 @@
 package main
 
 import (
-	"log"
-
+	log "github.com/sirupsen/logrus"
+	"os"
 	sw "github.com/mabaums/ece461-web/backend/openapi"
 )
 
 func main() {
-	log.Printf("Server started")
+	log.SetLevel(log.DebugLevel)
+	log.SetOutput(os.Stderr)
+	log.Info("Server started")
 
 	router := sw.NewRouter()
 

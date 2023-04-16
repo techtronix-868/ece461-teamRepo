@@ -13,7 +13,7 @@ package openapi
 import (
 	"database/sql"
 	"fmt"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 
@@ -40,7 +40,7 @@ func connectTCPSocket() (*sql.DB, error) {
 	mustGetenv := func(k string) string {
 		v := os.Getenv(k)
 		if v == "" {
-			log.Fatalf("Fatal Error in connect_tcp.go: %s environment variable not set.", k)
+			log.Fatal("Fatal Error in connect_tcp.go: %s environment variable not set.", k)
 		}
 		return v
 	}
