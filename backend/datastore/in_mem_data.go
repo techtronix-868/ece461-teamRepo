@@ -36,7 +36,7 @@ func (md *InMemoryDatstore) initIfEmpty() {
 
 func (md *InMemoryDatstore) GetPackage(id string) (*models.Package, *models.Error) {
 	md.initIfEmpty()
-	log.Info("Getting Package id: %v\n", id)
+	log.Infof("Getting Package id: %v\n", id)
 	for _, pkg := range md.packages {
 		if pkg.Metadata.ID == id {
 			return &pkg, nil
