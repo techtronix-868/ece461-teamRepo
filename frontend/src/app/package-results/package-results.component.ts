@@ -54,13 +54,17 @@ export class PackageResultsComponent implements OnInit {
     }) */
   }
 
+
   delete(id: string) {
-    this.service.packageDelete("", id).subscribe(body => {
-      console.log("Deleting: ", id)
-      console.log("Reponse: ", id)
-    }, error => {
-      this._snackbar.open(error.message, "ok")
-    })
+    if (confirm("Are you sure you want to delete?")) {
+      this.service.packageDelete("", id).subscribe(body => {
+        console.log("Deleting: ", id)
+        console.log("Reponse: ", id)
+      }, error => {
+        this._snackbar.open(error.message, "ok")
+      })
+    }
+
   }
 
   //TODO: LATER
