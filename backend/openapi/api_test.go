@@ -1,7 +1,17 @@
 package openapi
 
 import (
+	"bytes"
+	"encoding/json"
+	"io"
+	"log"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+
+	"github.com/gin-gonic/gin"
+	"github.com/mabaums/ece461-web/backend/models"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestConnectTCPSocket(t *testing.T) {
@@ -35,4 +45,25 @@ func TestConnectTCPSocket(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to ping MySQL instance: %v", err)
 	} */
+}
+
+func TestPackageList(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = &http.Request{}
+	packageQuery := models.PackageQuery{
+		Name:    "Name",
+		Version: "Version",
+	}
+	queries := []models.PackageQuery{packageQuery}
+	buf, err := json.Marshal(queries)
+	if err != nil {
+		log.Fatal("Error jsoning package query")
+	}
+
+	c.Request.Body = io.NopCloser(bytes.NewBuffer(buf))
+	PackagesList(c)
+
+	assert.Equal(t, w.Code, http.StatusOK, "Error")
 }

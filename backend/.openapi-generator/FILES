@@ -4,13 +4,13 @@ main.go
 openapi/README.md
 openapi/api_default.go
 openapi/model_authentication_request.go
-openapi/model_error.go
 openapi/model_package.go
 openapi/model_package_data.go
 openapi/model_package_history_entry.go
 openapi/model_package_metadata.go
 openapi/model_package_query.go
 openapi/model_package_rating.go
+openapi/model_package_reg_ex.go
 openapi/model_user.go
 openapi/model_user_authentication_info.go
 openapi/routers.go
