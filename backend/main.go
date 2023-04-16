@@ -11,7 +11,9 @@
 package main
 
 import (
-	"log"
+
+	log "github.com/sirupsen/logrus"
+	"os"
 
 	// WARNING!
 	// Change this to a fully-qualified import path
@@ -24,7 +26,9 @@ import (
 )
 
 func main() {
-	log.Printf("Server started")
+	log.SetLevel(log.DebugLevel)
+	log.SetOutput(os.Stderr)
+	log.Info("Server started")
 
 	router := sw.NewRouter()
 

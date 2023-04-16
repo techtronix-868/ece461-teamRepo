@@ -13,7 +13,7 @@ package openapi
 import (
 	"database/sql"
 	"fmt"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"time"
