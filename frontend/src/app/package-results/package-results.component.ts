@@ -61,6 +61,7 @@ export class PackageResultsComponent implements OnInit {
       this.service.packageDelete("", id).subscribe(body => {
         console.log("Deleting: ", id)
         console.log("Reponse: ", id)
+        this.packages = this.packages.filter(item => item.ID != id)
       }, error => {
         this._snackbar.open(error.message, "ok")
       })
