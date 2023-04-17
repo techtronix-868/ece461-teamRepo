@@ -7,9 +7,9 @@ import (
 	// "log"
 	"net/http"
 	"strings"
-	"strconv"
-	// "math/rand"
-	// "time"
+	// "strconv"
+	"math/rand"
+	"time"
 	// "os"
 	"github.com/gin-gonic/gin"
 	"github.com/mabaums/ece461-web/backend/models"
@@ -101,16 +101,6 @@ import (
 // 			type: string
   
 					
-// func generateID() string {
-// 	rand.Seed(time.Now().UnixNano())
-// 	const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-// 	b := make([]byte, 6)
-// 	for i := range b {
-// 			b[i] = chars[rand.Intn(len(chars))]
-// 	}
-// 	return string(b)
-// }
-
 	
 func PackageCreate(c *gin.Context) {
 	var pkg models.Package
@@ -118,7 +108,6 @@ func PackageCreate(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 	}
-
 
 	db_i, ok := c.Get("db")
 	if !ok {
@@ -142,25 +131,18 @@ func PackageCreate(c *gin.Context) {
 		return
 	}
 
-	if paramID == "" {
-		paramID = "1"
-	}
-	if count > 0 {
+	if count > 0 || paramID == "" {
 		// Generate new ID if package ID already exists or if the id is not specified
-		tempID, err := strconv.Atoi(paramID)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, models.Error{Code: 500, Message: "Failed to check if package ID exists"})
-			return
-		}
-		newID := strconv.Itoa(tempID)
 		
 		for {
-			tempID, err = strconv.Atoi(newID)
-			if err != nil {
-				c.AbortWithStatusJSON(http.StatusInternalServerError, models.Error{Code: 500, Message: "Failed to check if package ID exists"})
-				return
+			rand.Seed(time.Now().UnixNano())
+			const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+			b := make([]byte, 6)
+			for i := range b {
+					b[i] = chars[rand.Intn(len(chars))]
 			}
-			newID = strconv.Itoa(tempID + 1)
+			newID := string(b)
+
 			err = db.QueryRow("SELECT COUNT(*) FROM PackageMetadata WHERE PackageID = ?", newID).Scan(&count)
 			if err != nil {
 				c.AbortWithStatusJSON(http.StatusInternalServerError, models.Error{Code: 500, Message: "Failed to check if package ID exists"})
@@ -172,7 +154,6 @@ func PackageCreate(c *gin.Context) {
 			}
 		}
 	}
-
 
 	result, err := db.Exec("INSERT INTO PackageMetadata (Name, Version, PackageID) VALUES (?, ?, ?)", metadata.Name, metadata.Version, paramID)
 	if err != nil {
@@ -205,11 +186,6 @@ func PackageCreate(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 	}
-	// packageID, err := result.LastInsertId()
-	// if err != nil {
-	// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-	// 		return
-	// }
 
 	c.JSON(http.StatusOK, models.PackageMetadata{Name: metadata.Name, Version: metadata.Version, ID: paramID})
 }
