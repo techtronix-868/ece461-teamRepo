@@ -27,8 +27,8 @@ CREATE TABLE Package (
   metadata_id INT UNSIGNED,
   data_id INT UNSIGNED,
   PRIMARY KEY (id),
-  FOREIGN KEY (metadata_id) REFERENCES PackageMetadata(id),
-  FOREIGN KEY (data_id) REFERENCES PackageData(id)
+  FOREIGN KEY (metadata_id) REFERENCES PackageMetadata(id) ON DELETE CASCADE,
+  FOREIGN KEY (data_id) REFERENCES PackageData(id) ON DELETE CASCADE
 );
 
 

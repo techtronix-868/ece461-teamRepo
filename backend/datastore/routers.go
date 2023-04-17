@@ -86,12 +86,12 @@
 	// 	 CreateAuthToken,
 	//  },
  
-	//  {
-	// 	 "PackageByNameDelete",
-	// 	 http.MethodDelete,
-	// 	 "/package/byName/:name",
-	// 	 PackageByNameDelete,
-	//  },
+	 {
+		 "PackageByNameDelete",
+		 http.MethodDelete,
+		 "/package/byName/:name",
+		 PackageByNameDelete,
+	 },
  
 	//  {
 	// 	 "PackageByNameGet",
@@ -114,12 +114,12 @@
 		 PackageCreate,
 	 },
  
-	//  {
-	// 	 "PackageDelete",
-	// 	 http.MethodDelete,
-	// 	 "/package/:id",
-	// 	 PackageDelete,
-	//  },
+	 {
+		 "PackageDelete",
+		 http.MethodDelete,
+		 "/package/:id",
+		 PackageDelete,
+	 },
  
 	//  {
 	// 	 "PackageRate",
