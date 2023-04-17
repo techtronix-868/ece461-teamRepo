@@ -13,6 +13,7 @@
  import (
 	 "net/http"
 	 "time"
+	 "database/sql"
  
 	 "github.com/gin-contrib/cors"
 	 "github.com/gin-gonic/gin"
@@ -78,81 +79,81 @@
 		 Index,
 	 },
  
-	 {
-		 "CreateAuthToken",
-		 http.MethodPut,
-		 "/authenticate",
-		 CreateAuthToken,
-	 },
+	//  {
+	// 	 "CreateAuthToken",
+	// 	 http.MethodPut,
+	// 	 "/authenticate",
+	// 	 CreateAuthToken,
+	//  },
  
-	 {
-		 "PackageByNameDelete",
-		 http.MethodDelete,
-		 "/package/byName/:name",
-		 PackageByNameDelete,
-	 },
+	//  {
+	// 	 "PackageByNameDelete",
+	// 	 http.MethodDelete,
+	// 	 "/package/byName/:name",
+	// 	 PackageByNameDelete,
+	//  },
  
-	 {
-		 "PackageByNameGet",
-		 http.MethodGet,
-		 "/package/byName/:name",
-		 PackageByNameGet,
-	 },
+	//  {
+	// 	 "PackageByNameGet",
+	// 	 http.MethodGet,
+	// 	 "/package/byName/:name",
+	// 	 PackageByNameGet,
+	//  },
  
-	 {
-		 "PackageByRegExGet",
-		 http.MethodPost,
-		 "/package/byRegEx",
-		 PackageByRegExGet,
-	 },
+	//  {
+	// 	 "PackageByRegExGet",
+	// 	 http.MethodPost,
+	// 	 "/package/byRegEx",
+	// 	 PackageByRegExGet,
+	//  },
  
 	 {
 		 "PackageCreate",
 		 http.MethodPost,
-		 "/package",
+		 "/package/*id",
 		 PackageCreate,
 	 },
  
-	 {
-		 "PackageDelete",
-		 http.MethodDelete,
-		 "/package/:id",
-		 PackageDelete,
-	 },
+	//  {
+	// 	 "PackageDelete",
+	// 	 http.MethodDelete,
+	// 	 "/package/:id",
+	// 	 PackageDelete,
+	//  },
  
-	 {
-		 "PackageRate",
-		 http.MethodGet,
-		 "/package/:id/rate",
-		 PackageRate,
-	 },
+	//  {
+	// 	 "PackageRate",
+	// 	 http.MethodGet,
+	// 	 "/package/:id/rate",
+	// 	 PackageRate,
+	//  },
  
-	 {
-		 "PackageRetrieve",
-		 http.MethodGet,
-		 "/package/:id",
-		 PackageRetrieve,
-	 },
+	//  {
+	// 	 "PackageRetrieve",
+	// 	 http.MethodGet,
+	// 	 "/package/:id",
+	// 	 PackageRetrieve,
+	//  },
  
-	 {
-		 "PackageUpdate",
-		 http.MethodPut,
-		 "/package/:id",
-		 PackageUpdate,
-	 },
+	//  {
+	// 	 "PackageUpdate",
+	// 	 http.MethodPut,
+	// 	 "/package/:id",
+	// 	 PackageUpdate,
+	//  },
  
-	 {
-		 "PackagesList",
-		 http.MethodPost,
-		 "/packages",
-		 PackagesList,
-	 },
+	//  {
+	// 	 "PackagesList",
+	// 	 http.MethodPost,
+	// 	 "/packages",
+	// 	 PackagesList,
+	//  },
  
-	 {
-		 "RegistryReset",
-		 http.MethodDelete,
-		 "/reset",
-		 RegistryReset,
-	 },
+	//  {
+	// 	 "RegistryReset",
+	// 	 http.MethodDelete,
+	// 	 "/reset",
+	// 	 RegistryReset,
+	//  },
  }
  

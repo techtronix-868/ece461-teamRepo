@@ -1,5 +1,17 @@
 package api
 
+
+import (
+	"database/sql"
+	// "fmt"
+	// "log"
+	"net/http"
+	// "os"
+	"github.com/gin-gonic/gin"
+	_ "github.com/go-sql-driver/mysql"
+
+)
+
 func VerifyConnection(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 			err := db.Ping()
