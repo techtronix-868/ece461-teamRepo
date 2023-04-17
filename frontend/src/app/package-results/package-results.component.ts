@@ -21,6 +21,7 @@ export class PackageResultsComponent implements OnInit {
     this.searchByNameVersion()
   }
   searchByNameVersion() {
+    this._snackbar.open("Searching...", "ok", )
     var query:PackageQuery
     if (this.name && this.version) {
       query = {Name: this.name, Version: this.version}

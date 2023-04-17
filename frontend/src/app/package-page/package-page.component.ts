@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute } from '@angular/router';
 import { DefaultService, PackageData, PackageHistoryEntry, PackageRating } from 'generated';
 
@@ -9,7 +10,7 @@ import { DefaultService, PackageData, PackageHistoryEntry, PackageRating } from 
 })
 export class PackagePageComponent implements OnInit {
 
-  constructor (private route: ActivatedRoute, private service: DefaultService) {}
+  constructor (private route: ActivatedRoute, private service: DefaultService, private _snackbar: MatSnackBar) {}
 
   name: string = ""
   id: string = ""
@@ -29,6 +30,8 @@ export class PackagePageComponent implements OnInit {
     this.service.packageByNameGet(this.name, "").subscribe(body => {
       this.pkg_history = body;
       console.log("Retrieved pkg ", this.name, " ", this.pkg_history);
+    }, error => {
+      this._snackbar.open(error.message, "ok")
     })
   }
 
@@ -36,6 +39,9 @@ export class PackagePageComponent implements OnInit {
     this.service.packageRate(this.id, "").subscribe(body => {
       this.pkg_rate = body;
       console.log("Recieved rating: ", this.pkg_rate)
+    }, error => {
+      // Open snackbar
+      this._snackbar.open(error.message, "ok")
     })
   }
 }
