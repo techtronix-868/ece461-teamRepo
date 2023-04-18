@@ -78,6 +78,13 @@
 		 "/",
 		 Index,
 	 },
+
+	 {
+		"CreateUser",
+		http.MethodPost,
+		"/signup",
+		CreateUser,
+	 },
  
 	 {
 		 "CreateAuthToken",
@@ -100,12 +107,12 @@
 		 PackageByNameGet,
 	 },
  
-	 {
-		 "PackageByRegExGet",
-		 http.MethodPost,
-		 "/package/byRegEx",
-		 PackageByRegExGet,
-	 },
+	//  {
+	// 	 "PackageByRegExGet",
+	// 	 http.MethodPost,
+	// 	 "/package/byRegEx",
+	// 	 PackageByRegExGet,
+	//  },
  
 	 {
 		 "PackageCreate",

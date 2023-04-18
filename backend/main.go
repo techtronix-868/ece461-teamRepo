@@ -14,17 +14,14 @@ import (
 	"os"
 	"log"
 	"database/sql"
-	"fmt"
 	"github.com/joho/godotenv"
+	"fmt"
+  // "net/http"
 	sw "github.com/mabaums/ece461-web/backend/datastore"
 )
 
 func main() {
-
- 
-
 	log.Printf("Server started")
-
 	db, err := connectTCPSocket();
 	if err != nil {
 		log.Fatal("Failed to connect to database");
