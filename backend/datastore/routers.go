@@ -135,12 +135,12 @@
 		 PackageRetrieve,
 	 },
  
-	//  {
-	// 	 "PackageUpdate",
-	// 	 http.MethodPut,
-	// 	 "/package/:id",
-	// 	 PackageUpdate,
-	//  },
+	 {
+		 "PackageUpdate",
+		 http.MethodPut,
+		 "/package/:id",
+		 PackageUpdate,
+	 },
  
 	//  {
 	// 	 "PackagesList",

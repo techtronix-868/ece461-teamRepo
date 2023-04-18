@@ -3,7 +3,6 @@ package api
 import (
 	"database/sql"
 	// "errors"
-	// "fmt"
 	// "log"
 	"net/http"
 	"strings"
@@ -117,7 +116,6 @@ func getDB(c *gin.Context) (*sql.DB, bool) {
 }
 
 
-	
 func PackageCreate(c *gin.Context) {
 	var pkg models.Package
 	if err := c.ShouldBindJSON(&pkg); err != nil {
@@ -198,6 +196,51 @@ func PackageCreate(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, models.PackageMetadata{Name: metadata.Name, Version: metadata.Version, ID: paramID})
 }
+
+
+// PackageUpdate - Update this content of the package.
+func PackageUpdate(c *gin.Context) {
+	var pkg models.Package
+	if err := c.ShouldBindJSON(&pkg); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+	}
+
+	db, ok := getDB(c)
+	if !ok {
+		return
+	}
+
+	metadata := pkg.Metadata
+	var existingPackage models.Package
+	var package_id int;
+
+	err := db.QueryRow("SELECT p.id, pmd.Name, pmd.Version, pmd.PackageID "+
+			"FROM Package p "+
+			"JOIN PackageMetadata pmd ON p.metadata_id = pmd.id "+
+			"WHERE pmd.Name = ? AND pmd.Version = ? AND pmd.PackageID = ?",
+			metadata.Name, metadata.Version, metadata.ID).Scan(
+			&package_id, &existingPackage.Metadata.Name, &existingPackage.Metadata.Version, &existingPackage.Metadata.ID,
+	)
+	if err == sql.ErrNoRows {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Package not found1", "name": metadata.Name, "version":metadata.Version, "id":metadata.ID})
+		return
+	} else if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Update package data
+	packageData := pkg.Data
+	_, err = db.Exec("UPDATE PackageData pd SET Content = ?, URL = ?, JSProgram = ? WHERE pd.id = ? ",
+		packageData.Content, packageData.URL, packageData.JSProgram, package_id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Package updated"})
+}	
+
 
 // PackageDelete - Delete this version of the package. given packageid
 func PackageDelete(c *gin.Context) {
@@ -289,6 +332,7 @@ func PackageRetrieve(c *gin.Context) {
 			"js_program": packageJSProgram,
 	})
 }
+
 
 
 
@@ -390,41 +434,6 @@ func PackageRetrieve(c *gin.Context) {
 // 	c.JSON(http.StatusOK, pkgs)
 // }
 
-// // PackageUpdate - Update this content of the package.
-// func PackageUpdate(c *gin.Context) {
-// 	packageID := c.Param("id")
-
-// 	name := c.PostForm("name")
-// 	version := c.PostForm("version")
-// 	content := c.PostForm("content")
-// 	url := c.PostForm("url")
-// 	jsprogram := c.PostForm("jsprogram")
-
-// 	db, ok := c.Get("db")
-// 	if !ok {
-// 		c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorResponse{Message: "Server error"})
-// 		return
-// 	}
-
-// 	result, err := db.(*sql.DB).Exec("UPDATE packages SET name = ?, version = ?, content = ?, url = ?, jsprogram = ? WHERE id = ?", name, version, content, url, jsprogram, packageID)
-// 	if err != nil {
-// 		c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorResponse{Message: "Server error"})
-// 		return
-// 	}
-
-// 	rowsAffected, err := result.RowsAffected()
-// 	if err != nil {
-// 		c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorResponse{Message: "Server error"})
-// 		return
-// 	}
-
-// 	if rowsAffected == 0 {
-// 		c.AbortWithStatusJSON(http.StatusNotFound, ErrorResponse{Message: "Package not found"})
-// 		return
-// 	}
-
-// 	c.Status(http.StatusOK)
-// }
 
 
 
