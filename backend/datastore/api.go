@@ -7,7 +7,7 @@ import (
 	// "log"
 	"net/http"
 	"strings"
-	// "strconv"
+	"strconv"
 	"math/rand"
 	"time"
 	// "os"
@@ -18,90 +18,10 @@ import (
 
 )
 
- 
-// PackageCreate -
-
-// requestBody:
-// 	content:
-// 		application/json:
-// 			schema:
-// 				$ref: '#/components/schemas/Package'
-// 	required: true
-// responses:
-// 	"201":
-// 		content:
-// 			application/json:
-// 				schema:
-// 					$ref: '#/components/schemas/PackageMetadata'
-// 		description: Success. Check the ID in the returned metadata for the official
-// 			ID.
-// 	"403":
-// 		description: Package exists already.
-// 	"400":
-// 		description: Malformed request.
-
-// Package:
-// 	required:
-// 	- metadata
-// 	- data
-// 	type: object
-// 	properties:
-// 		metadata:
-// 			$ref: '#/components/schemas/PackageMetadata'
-// 			description: ""
-// 		data:
-// 			$ref: '#/components/schemas/PackageData'
-// 			description: ""
-// PackageMetadata:
-// 	description: |-
-// 		The "Name" and "Version" are used as a unique identifier pair when uploading a package.
-
-// 		The "ID" is used as an internal identifier for interacting with existing packages.
-// 	required:
-// 	- Name
-// 	- Version
-// 	- ID
-// 	type: object
-// 	properties:
-// 		Name:
-// 			$ref: '#/components/schemas/PackageName'
-// 			description: Package name
-// 			example: my-package
-// 		Version:
-// 			description: Package version
-// 			type: string
-// 			example: 1.2.3
-// 		ID:
-// 			$ref: '#/components/schemas/PackageID'
-// 			description: "Unique ID for use with the /package/{id} endpoint."
-// 			example: "123567192081501"
+type AuthenticationToken string
 
 
-// PackageData:
-// 	description: |-
-// 		This is a "union" type.
-// 		- On package upload, either Content or URL should be set.
-// 		- On package update, exactly one field should be set.
-// 		- On download, the Content field should be set.
-// 	type: object
-// 	properties:
-// 		Content:
-// 			description: |-
-// 				Package contents. This is the zip file uploaded by the user. (Encoded as text using a Base64 encoding).
-
-// 				This will be a zipped version of an npm package's GitHub repository, minus the ".git/" directory." It will, for example, include the "package.json" file that can be used to retrieve the project homepage.
-
-// 				See https://docs.npmjs.com/cli/v7/configuring-npm/package-json#homepage.
-// 			type: string
-// 		URL:
-// 			description: Package URL (for use in public ingest).
-// 			type: string
-// 		JSProgram:
-// 			description: A JavaScript program (for use with sensitive modules).
-// 			type: string
-  
-
-// NOT AN API ENDPOINT
+/*  HELPER FUNCTIONS */
 func getDB(c *gin.Context) (*sql.DB, bool) {
 	db_i, ok := c.Get("db")
 	if !ok {
@@ -116,7 +36,45 @@ func getDB(c *gin.Context) (*sql.DB, bool) {
 	return db, true
 }
 
+func VerifyPassword(username string, password string) (*User, error) {
+	db, ok := getDB(c)
+	if !ok {
+		return
+	}
+	// Retrieve the user from the database
+	var user User
+	err := db.QueryRow("SELECT id, name, isAdmin FROM User WHERE name = ?", username).
+		Scan(&user.ID, &user.Name, &user.IsAdmin)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil // user not found
+		}
+		return nil, err // other error
+	}
 
+	// Retrieve the user's authentication info from the database
+	var authInfo UserAuthenticationInfo
+	err = db.QueryRow("SELECT id, user_id, password FROM UserAuthenticationInfo WHERE user_id = ?", user.ID).
+		Scan(&authInfo.ID, &authInfo.UserID, &authInfo.Password)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil // authentication info not found
+		}
+		return nil, err // other error
+	}
+
+	// Verify the password against the stored hash
+	err = bcrypt.CompareHashAndPassword([]byte(authInfo.Password), []byte(password))
+	if err != nil {
+		return nil, nil // incorrect password
+	}
+
+	// Password is correct, return the user
+	return &user, nil
+}
+
+
+/*  API Endpoints */
 func PackageCreate(c *gin.Context) {
 	var pkg models.Package
 	if err := c.ShouldBindJSON(&pkg); err != nil {
@@ -198,7 +156,6 @@ func PackageCreate(c *gin.Context) {
 	c.JSON(http.StatusCreated, models.PackageMetadata{Name: metadata.Name, Version: metadata.Version, ID: paramID})
 }
 
-
 // PackageUpdate - Update this content of the package.
 func PackageUpdate(c *gin.Context) {
 	var pkg models.Package
@@ -242,7 +199,6 @@ func PackageUpdate(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Package updated"})
 }	
 
-
 // PackageDelete - Delete this version of the package. given packageid
 func PackageDelete(c *gin.Context) {
 	db, ok := getDB(c)
@@ -269,7 +225,6 @@ func PackageDelete(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Package deleted"})
 }
-
 
 // PackageByNameDelete - Delete all versions of this package. return string of package name
 func PackageByNameDelete(c *gin.Context) {
@@ -299,7 +254,6 @@ func PackageByNameDelete(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Package deleted"})
 }
-
 
 // PackageRetrieve - Interact with the package with this ID
 func PackageRetrieve(c *gin.Context) {
@@ -334,7 +288,6 @@ func PackageRetrieve(c *gin.Context) {
 			"js_program": packageJSProgram,
 	})
 }
-
 
 // RegistryReset - Reset the registry
 func RegistryReset(c *gin.Context) {
@@ -373,7 +326,6 @@ func RegistryReset(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Registry reset complete"})
 }
-
 
 // PacakgeByNameGet - 
 func PackageByNameGet(c *gin.Context) {
@@ -424,9 +376,6 @@ func PackageByNameGet(c *gin.Context) {
 
 	c.JSON(http.StatusOK, packageHistoryEntries)
 }
-
-
-type AuthenticationToken string
 
 func CreateAuthToken(c *gin.Context) {
 	// Get authentication request from request body
@@ -486,97 +435,122 @@ func CreateAuthToken(c *gin.Context) {
 	c.JSON(http.StatusOK, AuthenticationToken(tokenString))
 }
 
-
-func VerifyPassword(username string, password string) (*User, error) {
-	db, ok := getDB(c)
-	if !ok {
-		return
-	}
-	// Retrieve the user from the database
-	var user User
-	err := db.QueryRow("SELECT id, name, isAdmin FROM User WHERE name = ?", username).
-		Scan(&user.ID, &user.Name, &user.IsAdmin)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil // user not found
-		}
-		return nil, err // other error
-	}
-
-	// Retrieve the user's authentication info from the database
-	var authInfo UserAuthenticationInfo
-	err = db.QueryRow("SELECT id, user_id, password FROM UserAuthenticationInfo WHERE user_id = ?", user.ID).
-		Scan(&authInfo.ID, &authInfo.UserID, &authInfo.Password)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil // authentication info not found
-		}
-		return nil, err // other error
-	}
-
-	// Verify the password against the stored hash
-	err = bcrypt.CompareHashAndPassword([]byte(authInfo.Password), []byte(password))
-	if err != nil {
-		return nil, nil // incorrect password
-	}
-
-	// Password is correct, return the user
-	return &user, nil
-}
-
-
-
-
-
-
 func PackagesList(c *gin.Context) {
+	// Parse the request body as an array of PackageQuery objects
+	var queries []models.PackageQuery
+	err := c.ShouldBindJSON(&queries)
+	if err != nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+	}
+
+	// Get the offset parameter from the query string
+	offsetStr := c.Query("offset")
+	var offset int
+	if offsetStr == "" {
+			offset = 0
+	} else {
+			var err error
+			offset, err = strconv.Atoi(offsetStr)
+			if err != nil {
+					c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid offset parameter"})
+					return
+			}
+	}
+
 	db, ok := getDB(c)
 	if !ok {
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{})
-}
 
-
-// PackageByRegExGet - Get any packages fitting the regular expression.
-
-func PackageByRegExGet(c *gin.Context) {
-	packageNamePattern := c.Param("pattern")
-
-	db, ok := c.Get("db")
-	if !ok {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorResponse{Message: "Server error"})
-		return
+	// Build the SQL query based on the queries and offset
+	var query strings.Builder
+	query.WriteString("SELECT * FROM PackageMetadata")
+	if len(queries) > 0 {
+			query.WriteString(" WHERE ")
+			for i, q := range queries {
+					if i > 0 {
+							query.WriteString(" AND ")
+					}
+					query.WriteString(q.ToSQL())
+			}
 	}
+	query.WriteString(fmt.Sprintf(" LIMIT %d, 10", offset))
 
-	rows, err := db.(*sql.DB).Query("SELECT id, metadata_id, data_id, rating_id FROM packages WHERE name REGEXP ?", packageNamePattern)
+	// Execute the SQL query and retrieve the package metadata
+	rows, err := db.Query(query.String())
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorResponse{Message: "Server error"})
-		return
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to query packages from database"})
+			return
 	}
 	defer rows.Close()
 
-	pkgs := []Package{}
+	packages := make([]models.PackageMetadata, 0)
 	for rows.Next() {
-		package_temp := Package{}
-		err := rows.Scan(&package_temp.id, &package_temp.metadata_id, &package_temp.data_id)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorResponse{Message: "Server error"})
-			return
-		}
-		pkgs = append(pkgs, package_temp)
+			var packageMetadata models.PackageMetadata
+			err := rows.Scan(&packageMetadata.ID, &packageMetadata.Name, &packageMetadata.Version)
+			if err != nil {
+					c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to scan package metadata"})
+					return
+			}
+			packages = append(packages, packageMetadata)
 	}
 
-	c.JSON(http.StatusOK, pkgs)
+	// Set the offset header in the response
+	nextOffset := offset + len(packages)
+	c.Header("offset", strconv.Itoa(nextOffset))
+
+	// Return the package metadata as a JSON array
+	c.JSON(http.StatusOK, packages)
 }
 
+// PackageByRegExGet - Get any packages fitting the regular expression.
+func PackageByRegExGet(c *gin.Context) {
+	// Parse the request body as a PackageRegEx object
+	var query models.PackageRegEx
+	err := c.ShouldBindJSON(&query)
+	if err != nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+	}
+
+	// Search for packages that match the regular expression
+	db, ok := getDB(c)
+	if !ok {
+		return
+	}
+
+	var packages []models.PackageMetadata
+	rows, err := db.Query("SELECT version, name, id FROM packages WHERE name REGEXP ? OR readme REGEXP ?", query.RegEx, query.RegEx)
+	if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+			return
+	}
+	defer rows.Close()
+	for rows.Next() {
+			var pkg models.PackageMetadata
+			err := rows.Scan(&pkg.Version, &pkg.Name, &pkg.ID)
+			if err != nil {
+					c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+					return
+			}
+			packages = append(packages, pkg)
+	}
+	if err := rows.Err(); err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+			return
+	}
+
+	// Return the packages as a JSON array
+	if len(packages) > 0 {
+			c.JSON(http.StatusOK, packages)
+	} else {
+			c.AbortWithStatus(http.StatusNotFound)
+	}
+}
 
 // PackageRate -
 func PackageRate(c *gin.Context) {
-	var rating Rating
-
+	var rating Rating	
 	c.JSON(http.StatusOK, ratings)
 }
-
-
-
