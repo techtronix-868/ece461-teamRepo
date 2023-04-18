@@ -93,12 +93,12 @@
 		 PackageByNameDelete,
 	 },
  
-	//  {
-	// 	 "PackageByNameGet",
-	// 	 http.MethodGet,
-	// 	 "/package/byName/:name",
-	// 	 PackageByNameGet,
-	//  },
+	 {
+		 "PackageByNameGet",
+		 http.MethodGet,
+		 "/package/byName/:name",
+		 PackageByNameGet,
+	 },
  
 	//  {
 	// 	 "PackageByRegExGet",
@@ -121,12 +121,12 @@
 		 PackageDelete,
 	 },
  
-	//  {
-	// 	 "PackageRate",
-	// 	 http.MethodGet,
-	// 	 "/package/:id/rate",
-	// 	 PackageRate,
-	//  },
+	 {
+		 "PackageRate",
+		 http.MethodGet,
+		 "/package/:id/rate",
+		 PackageRate,
+	 },
  
 	 {
 		 "PackageRetrieve",
@@ -142,18 +142,18 @@
 		 PackageUpdate,
 	 },
  
-	//  {
-	// 	 "PackagesList",
-	// 	 http.MethodPost,
-	// 	 "/packages",
-	// 	 PackagesList,
-	//  },
+	 {
+		 "PackagesList",
+		 http.MethodPost,
+		 "/packages",
+		 PackagesList,
+	 },
  
-	//  {
-	// 	 "RegistryReset",
-	// 	 http.MethodDelete,
-	// 	 "/reset",
-	// 	 RegistryReset,
-	//  },
+	 {
+		 "RegistryReset",
+		 http.MethodDelete,
+		 "/reset",
+		 RegistryReset,
+	 },
  }
  

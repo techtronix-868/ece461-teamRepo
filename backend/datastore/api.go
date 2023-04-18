@@ -146,7 +146,7 @@ func PackageCreate(c *gin.Context) {
 			const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 			b := make([]byte, 6)
 			for i := range b {
-					b[i] = chars[rand.Intn(len(chars))]
+				b[i] = chars[rand.Intn(len(chars))]
 			}
 			newID := string(b)
 
@@ -164,34 +164,34 @@ func PackageCreate(c *gin.Context) {
 
 	result, err := db.Exec("INSERT INTO PackageMetadata (Name, Version, PackageID) VALUES (?, ?, ?)", metadata.Name, metadata.Version, paramID)
 	if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	metadataID, err := result.LastInsertId()
 	if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	// Insert PackageData
 	data := pkg.Data
 	result, err = db.Exec("INSERT INTO PackageData (Content, URL, JSProgram) VALUES (?, ?, ?)", data.Content, data.URL, data.JSProgram)
 	if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 	dataID, err := result.LastInsertId()
 	if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	// Insert Package
 	result, err = db.Exec("INSERT INTO Package (metadata_id, data_id) VALUES (?, ?)", metadataID, dataID)
 	if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	c.JSON(http.StatusCreated, models.PackageMetadata{Name: metadata.Name, Version: metadata.Version, ID: paramID})
@@ -269,6 +269,7 @@ func PackageDelete(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Package deleted"})
 }
 
+
 // PackageByNameDelete - Delete all versions of this package. return string of package name
 func PackageByNameDelete(c *gin.Context) {
 	db, ok := getDB(c)
@@ -334,159 +335,184 @@ func PackageRetrieve(c *gin.Context) {
 }
 
 
+// RegistryReset - Reset the registry
+func RegistryReset(c *gin.Context) {
+	db, ok := getDB(c)
+	if !ok {
+		return
+	}
+
+	// Delete all data from Package table
+	_, err := db.Exec("DELETE FROM Package")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Delete all data from PackageData table
+	_, err = db.Exec("DELETE FROM PackageData")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Delete all data from PackageHistoryEntry table
+	_, err = db.Exec("DELETE FROM PackageHistoryEntry")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Delete all data from PackageMetadata table
+	_, err = db.Exec("DELETE FROM PackageMetadata")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Registry reset complete"})
+}
 
 
+// PacakgeByNameGet - 
+func PackageByNameGet(c *gin.Context) {
+	// Return the history of this package (all versions).
+	db, ok := getDB(c)
+	if !ok {
+		return
+	}
 
-// // PacakgeByNameGet - 
-// func PackageByNameGet(c *gin.Context) {
-// 	// Return the history of this package (all versions).
-// 	db, ok := getDB(c)
-// 	if !ok {
-// 		return
-// 	}
+	// Get name from query parameter
+	name := strings.TrimLeft(c.Param("name"), "/")
 
-// 	packageName := strings.TrimLeft(c.Param("name"), "/")
-// 	var metadataID int
-// 	err := db.QueryRow("SELECT id FROM PackageMetadata WHERE Name = ?", packageName).Scan(&metadataID)
-// 	if err != nil {
-// 		c.JSON(http.StatusInternalServerError, gin.H{"message": "error1"})
-// 		return 
-// 	}
+	// Query for all packages with matching name
+	rows, err := db.Query("SELECT pmd.Name, pmd.Version, pmd.PackageID, phe.user, phe.date, phe.action " +
+		"FROM Package p " +
+		"JOIN PackageMetadata pmd ON p.metadata_id = pmd.id " +
+		"JOIN PackageHistoryEntry phe ON p.metadata_id = phe.package_metadata_id " +
+		"WHERE pmd.Name = ?", name)
 
-// 	var package_temp Package
-// 	// change here to verify with schema
-// 	err := db.(*sql.DB).QueryRow("SELECT id, name, version, description FROM packages WHERE name = ?", packageName).Scan(&package_temp.id, &package_temp.metadata_id, &package_temp.data_id)
-// 	if err != nil {
-// 		if errors.Is(err, sql.ErrNoRows) {
-// 			c.AbortWithStatusJSON(http.StatusNotFound, ErrorResponse{Message:"Package not found"})
-// 		} else {
-// 			c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorResponse{Message: "Server error"})
-// 		}
-// 		return
-// 	}
-// 	c.JSON(http.StatusOK, package_temp)
-// }
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
 
+	// Store results in a slice of PackageHistoryEntry structs
+	packageHistoryEntries := make([]models.PackageHistoryEntry, 0)
+	for rows.Next() {
+		var packageHistoryEntry models.PackageHistoryEntry
+		var packageMetadata models.PackageMetadata
 
-// // CreateAuthToken -
-// func CreateAuthToken(c *gin.Context) {
-// 	username := c.PostForm("username")
-// 	password := c.PostForm("password")
+		err := rows.Scan(&packageMetadata.Name, &packageMetadata.Version, &packageMetadata.ID,
+			&packageHistoryEntry.User, &packageHistoryEntry.Date, &packageHistoryEntry.Action)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		packageMetadata.ID = "" // Set ID to "" since it's not needed
+		packageHistoryEntry.PackageMetadata = packageMetadata
+		packageHistoryEntries = append(packageHistoryEntries, packageHistoryEntry)
+	}
 
-// 	// Check if the username and password are valid
-// 	if !isValidUser(username, password) {
-// 			c.AbortWithStatusJSON(http.StatusUnauthorized, ErrorResponse{Message: "Invalid username or password"})
-// 			return
-// 	}
+	// Check for errors during iteration
+	if err := rows.Err(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
-// 	// Generate a new authentication token
-// 	token, err := generateToken(username)
-// 	if err != nil {
-// 			c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorResponse{Message: "Server error"})
-// 			return
-// 	}
-
-// 	// Return the authentication token to the client
-// 	c.JSON(http.StatusOK, gin.H{"token": token})
-// }
-
-
-
-
-
-
-
-
-
-
-
-
-
-// // PackageByRegExGet - Get any packages fitting the regular expression.
-
-// func PackageByRegExGet(c *gin.Context) {
-// 	packageNamePattern := c.Param("pattern")
-
-// 	db, ok := c.Get("db")
-// 	if !ok {
-// 		c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorResponse{Message: "Server error"})
-// 		return
-// 	}
-
-// 	rows, err := db.(*sql.DB).Query("SELECT id, metadata_id, data_id, rating_id FROM packages WHERE name REGEXP ?", packageNamePattern)
-// 	if err != nil {
-// 		c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorResponse{Message: "Server error"})
-// 		return
-// 	}
-// 	defer rows.Close()
-
-// 	pkgs := []Package{}
-// 	for rows.Next() {
-// 		package_temp := Package{}
-// 		err := rows.Scan(&package_temp.id, &package_temp.metadata_id, &package_temp.data_id)
-// 		if err != nil {
-// 			c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorResponse{Message: "Server error"})
-// 			return
-// 		}
-// 		pkgs = append(pkgs, package_temp)
-// 	}
-
-// 	c.JSON(http.StatusOK, pkgs)
-// }
+	c.JSON(http.StatusOK, packageHistoryEntries)
+}
 
 
 
 
+func PackagesList(c *gin.Context) {
+	db, ok := getDB(c)
+	if !ok {
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{})
+}
 
 
-// // PackageRate -
-// func PackageRate(c *gin.Context) {
-// 	packageID := c.Param("id")
+// CreateAuthToken -
+func CreateAuthToken(c *gin.Context) {
+	username := c.PostForm("username")
+	password := c.PostForm("password")
 
-// 	db, ok := c.Get("db")
-// 	if !ok {
-// 		c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorResponse{Message: "Server error"})
-// 		return
-// 	}
+	// Check if the username and password are valid
+	if !isValidUser(username, password) {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, ErrorResponse{Message: "Invalid username or password"})
+			return
+	}
 
-// 	var ratings []Rating
-// 	rows, err := db.(*sql.DB).Query("SELECT id, package_id, user_id, rating FROM ratings WHERE package_id = ?", packageID)
-// 	if err != nil {
-// 		c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorResponse{Message: "Server error"})
-// 		return
-// 	}
-// 	defer rows.Close()
+	// Generate a new authentication token
+	token, err := generateToken(username)
+	if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorResponse{Message: "Server error"})
+			return
+	}
 
-// 	for rows.Next() {
-// 		var rating Rating
-
-// 		err = rows.Scan(&rating.id, &rating.bus_factor, &rating.correctness, &rating.ramp_up, &rating.responsive_maintainer, &rating.license_score, &rating.good_pinning_practice, &rating.pull_request, &rating.net_score)
-// 		if err != nil {
-// 			c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorResponse{Message: "Server error"})
-// 			return
-// 		}
-// 		ratings = append(ratings, rating)
-// 	}
-
-// 	if len(ratings) == 0 {
-// 		c.AbortWithStatusJSON(http.StatusNotFound, ErrorResponse{Message: "Package not found"})
-// 		return
-// 	}
-
-// 	c.JSON(http.StatusOK, ratings)
-// }
+	// Return the authentication token to the client
+	c.JSON(http.StatusOK, gin.H{"token": token})
+}
 
 
 
-// // RegistryReset - Reset the registry
-// func RegistryReset(c *gin.Context) {
-// 	db := c.MustGet("db").(*sql.DB)
 
-// 	_, err := db.Exec("DELETE FROM packages")
-// 	if err != nil {
-// 		c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorResponse{Message: "Server error"})
-// 		return
-// 	}
 
-// 	c.JSON(http.StatusOK, gin.H{"message": "Registry reset"})
-// }
+
+
+
+
+
+
+
+
+// PackageByRegExGet - Get any packages fitting the regular expression.
+
+func PackageByRegExGet(c *gin.Context) {
+	packageNamePattern := c.Param("pattern")
+
+	db, ok := c.Get("db")
+	if !ok {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorResponse{Message: "Server error"})
+		return
+	}
+
+	rows, err := db.(*sql.DB).Query("SELECT id, metadata_id, data_id, rating_id FROM packages WHERE name REGEXP ?", packageNamePattern)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorResponse{Message: "Server error"})
+		return
+	}
+	defer rows.Close()
+
+	pkgs := []Package{}
+	for rows.Next() {
+		package_temp := Package{}
+		err := rows.Scan(&package_temp.id, &package_temp.metadata_id, &package_temp.data_id)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorResponse{Message: "Server error"})
+			return
+		}
+		pkgs = append(pkgs, package_temp)
+	}
+
+	c.JSON(http.StatusOK, pkgs)
+}
+
+
+
+
+
+
+// PackageRate -
+func PackageRate(c *gin.Context) {
+	var rating Rating
+
+	c.JSON(http.StatusOK, ratings)
+}
+
+
+
