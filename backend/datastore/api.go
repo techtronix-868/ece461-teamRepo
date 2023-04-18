@@ -256,6 +256,74 @@ func PackageByNameDelete(c *gin.Context) {
 }
 
 
+// PackageRetrieve - Interact with the package with this ID
+func PackageRetrieve(c *gin.Context) {
+	db, ok := getDB(c)
+	if !ok {
+		return
+	}
+
+	packageID := strings.TrimLeft(c.Param("id"), "/")
+
+	var packageName, packageVersion, packageContent, packageURL, packageJSProgram string
+
+	err := db.QueryRow(`
+			SELECT m.Name, m.Version, d.Content, d.URL, d.JSProgram
+			FROM Package p
+			INNER JOIN PackageMetadata m ON p.metadata_id = m.id
+			INNER JOIN PackageData d ON p.data_id = d.id
+			WHERE m.PackageID = ?;
+	`, packageID).Scan(&packageName, &packageVersion, &packageContent, &packageURL, &packageJSProgram)
+
+	if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+			"package_id": packageID,
+			"name": packageName,
+			"version": packageVersion,
+			"content": packageContent,
+			"url": packageURL,
+			"js_program": packageJSProgram,
+	})
+}
+
+
+
+
+// // PacakgeByNameGet - 
+// func PackageByNameGet(c *gin.Context) {
+// 	// Return the history of this package (all versions).
+// 	db, ok := getDB(c)
+// 	if !ok {
+// 		return
+// 	}
+
+// 	packageName := strings.TrimLeft(c.Param("name"), "/")
+// 	var metadataID int
+// 	err := db.QueryRow("SELECT id FROM PackageMetadata WHERE Name = ?", packageName).Scan(&metadataID)
+// 	if err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"message": "error1"})
+// 		return 
+// 	}
+
+// 	var package_temp Package
+// 	// change here to verify with schema
+// 	err := db.(*sql.DB).QueryRow("SELECT id, name, version, description FROM packages WHERE name = ?", packageName).Scan(&package_temp.id, &package_temp.metadata_id, &package_temp.data_id)
+// 	if err != nil {
+// 		if errors.Is(err, sql.ErrNoRows) {
+// 			c.AbortWithStatusJSON(http.StatusNotFound, ErrorResponse{Message:"Package not found"})
+// 		} else {
+// 			c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorResponse{Message: "Server error"})
+// 		}
+// 		return
+// 	}
+// 	c.JSON(http.StatusOK, package_temp)
+// }
+
+
 // // CreateAuthToken -
 // func CreateAuthToken(c *gin.Context) {
 // 	username := c.PostForm("username")
@@ -288,30 +356,7 @@ func PackageByNameDelete(c *gin.Context) {
 
 
 
-// // PacakgeByNameGet - 
-// func PackageByNameGet(c *gin.Context) {
-// 	// Return the history of this package (all versions).
-// 	packageName := c.Param("name")
 
-// 	db, ok := c.Get("db")
-// 	if !ok {
-// 		c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorResponse{Message: "Server error"})
-// 		return
-// 	}
-
-// 	var package_temp Package
-// 	// change here to verify with schema
-// 	err := db.(*sql.DB).QueryRow("SELECT id, name, version, description FROM packages WHERE name = ?", packageName).Scan(&package_temp.id, &package_temp.metadata_id, &package_temp.data_id)
-// 	if err != nil {
-// 		if errors.Is(err, sql.ErrNoRows) {
-// 			c.AbortWithStatusJSON(http.StatusNotFound, ErrorResponse{Message:"Package not found"})
-// 		} else {
-// 			c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorResponse{Message: "Server error"})
-// 		}
-// 		return
-// 	}
-// 	c.JSON(http.StatusOK, package_temp)
-// }
 
 // // PackageByRegExGet - Get any packages fitting the regular expression.
 
@@ -344,6 +389,44 @@ func PackageByNameDelete(c *gin.Context) {
 
 // 	c.JSON(http.StatusOK, pkgs)
 // }
+
+// // PackageUpdate - Update this content of the package.
+// func PackageUpdate(c *gin.Context) {
+// 	packageID := c.Param("id")
+
+// 	name := c.PostForm("name")
+// 	version := c.PostForm("version")
+// 	content := c.PostForm("content")
+// 	url := c.PostForm("url")
+// 	jsprogram := c.PostForm("jsprogram")
+
+// 	db, ok := c.Get("db")
+// 	if !ok {
+// 		c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorResponse{Message: "Server error"})
+// 		return
+// 	}
+
+// 	result, err := db.(*sql.DB).Exec("UPDATE packages SET name = ?, version = ?, content = ?, url = ?, jsprogram = ? WHERE id = ?", name, version, content, url, jsprogram, packageID)
+// 	if err != nil {
+// 		c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorResponse{Message: "Server error"})
+// 		return
+// 	}
+
+// 	rowsAffected, err := result.RowsAffected()
+// 	if err != nil {
+// 		c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorResponse{Message: "Server error"})
+// 		return
+// 	}
+
+// 	if rowsAffected == 0 {
+// 		c.AbortWithStatusJSON(http.StatusNotFound, ErrorResponse{Message: "Package not found"})
+// 		return
+// 	}
+
+// 	c.Status(http.StatusOK)
+// }
+
+
 
 
 
@@ -384,65 +467,6 @@ func PackageByNameDelete(c *gin.Context) {
 // 	c.JSON(http.StatusOK, ratings)
 // }
 
-// // PackageRetrieve - Interact with the package with this ID
-// func PackageRetrieve(c *gin.Context) {
-// 	packageID := c.Param("id")
-
-// 	db, ok := c.Get("db")
-// 	if !ok {
-// 		c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorResponse{Message: "Server error"})
-// 		return
-// 	}
-
-// 	var package_temp Package
-// 	err := db.(*sql.DB).QueryRow("SELECT id, name, version, content, url, jsprogram FROM packages WHERE id = ?", packageID).Scan(&package_temp.id, &package_temp.metadata_id, &package_temp.data_id)
-// 	if err != nil {
-// 		if err == sql.ErrNoRows {
-// 			c.AbortWithStatusJSON(http.StatusNotFound, ErrorResponse{Message: "Package not found"})
-// 		} else {
-// 			c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorResponse{Message: "Server error"})
-// 		}
-// 		return
-// 	}
-
-// 	c.JSON(http.StatusOK, package_temp)
-// }
-
-// // PackageUpdate - Update this content of the package.
-// func PackageUpdate(c *gin.Context) {
-// 	packageID := c.Param("id")
-
-// 	name := c.PostForm("name")
-// 	version := c.PostForm("version")
-// 	content := c.PostForm("content")
-// 	url := c.PostForm("url")
-// 	jsprogram := c.PostForm("jsprogram")
-
-// 	db, ok := c.Get("db")
-// 	if !ok {
-// 		c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorResponse{Message: "Server error"})
-// 		return
-// 	}
-
-// 	result, err := db.(*sql.DB).Exec("UPDATE packages SET name = ?, version = ?, content = ?, url = ?, jsprogram = ? WHERE id = ?", name, version, content, url, jsprogram, packageID)
-// 	if err != nil {
-// 		c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorResponse{Message: "Server error"})
-// 		return
-// 	}
-
-// 	rowsAffected, err := result.RowsAffected()
-// 	if err != nil {
-// 		c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorResponse{Message: "Server error"})
-// 		return
-// 	}
-
-// 	if rowsAffected == 0 {
-// 		c.AbortWithStatusJSON(http.StatusNotFound, ErrorResponse{Message: "Package not found"})
-// 		return
-// 	}
-
-// 	c.Status(http.StatusOK)
-// }
 
 
 // // RegistryReset - Reset the registry

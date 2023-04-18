@@ -128,12 +128,12 @@
 	// 	 PackageRate,
 	//  },
  
-	//  {
-	// 	 "PackageRetrieve",
-	// 	 http.MethodGet,
-	// 	 "/package/:id",
-	// 	 PackageRetrieve,
-	//  },
+	 {
+		 "PackageRetrieve",
+		 http.MethodGet,
+		 "/package/:id",
+		 PackageRetrieve,
+	 },
  
 	//  {
 	// 	 "PackageUpdate",
