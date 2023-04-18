@@ -79,12 +79,12 @@
 		 Index,
 	 },
  
-	//  {
-	// 	 "CreateAuthToken",
-	// 	 http.MethodPut,
-	// 	 "/authenticate",
-	// 	 CreateAuthToken,
-	//  },
+	 {
+		 "CreateAuthToken",
+		 http.MethodPut,
+		 "/authenticate",
+		 CreateAuthToken,
+	 },
  
 	 {
 		 "PackageByNameDelete",
@@ -100,12 +100,12 @@
 		 PackageByNameGet,
 	 },
  
-	//  {
-	// 	 "PackageByRegExGet",
-	// 	 http.MethodPost,
-	// 	 "/package/byRegEx",
-	// 	 PackageByRegExGet,
-	//  },
+	 {
+		 "PackageByRegExGet",
+		 http.MethodPost,
+		 "/package/byRegEx",
+		 PackageByRegExGet,
+	 },
  
 	 {
 		 "PackageCreate",

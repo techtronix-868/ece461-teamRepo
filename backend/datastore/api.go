@@ -2,6 +2,7 @@ package api
 
 import (
 	"database/sql"
+	"encoding/json"
 	// "errors"
 	// "log"
 	"net/http"
@@ -12,7 +13,7 @@ import (
 	// "os"
 	"github.com/gin-gonic/gin"
 	"github.com/mabaums/ece461-web/backend/models"
-
+	"github.com/dgrijalva/jwt-go"
 	_ "github.com/go-sql-driver/mysql"
 
 )
@@ -425,6 +426,107 @@ func PackageByNameGet(c *gin.Context) {
 }
 
 
+type AuthenticationToken string
+
+func CreateAuthToken(c *gin.Context) {
+	// Get authentication request from request body
+	db, ok := getDB(c)
+	if !ok {
+		return
+	}
+
+	var authReq AuthenticationRequest
+	if err := c.ShouldBindJSON(&authReq); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Check if user authentication info is correct
+	// For example, verify user's password against stored hash
+	// ...
+
+	var dbAuthInfo models.UserAuthenticationInfo
+	err = db.QueryRow("SELECT id, user_id, password FROM UserAuthenticationInfo WHERE user_id = ?", authReq.User.ID).Scan(&dbAuthInfo.ID, &dbAuthInfo.UserID, &dbAuthInfo.Password)
+	if err == sql.ErrNoRows {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
+		return
+	} else if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Verify password
+	if !verifyPassword(authReq.Secret.Password, dbAuthInfo.Password) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
+		return
+	}
+
+	// Create JWT token
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id": authReq.User.ID,
+		// Add any other relevant user info to the token
+	})
+
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	secret_key = os.Getenv("SECRET_KEY")      
+
+	// Sign the token with a secret key
+	secretKey := []byte(secret_key) // Replace with your own secret key
+	tokenString, err := token.SignedString(secretKey)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Return the token as a response
+	c.JSON(http.StatusOK, AuthenticationToken(tokenString))
+}
+
+
+func VerifyPassword(username string, password string) (*User, error) {
+	db, ok := getDB(c)
+	if !ok {
+		return
+	}
+	// Retrieve the user from the database
+	var user User
+	err := db.QueryRow("SELECT id, name, isAdmin FROM User WHERE name = ?", username).
+		Scan(&user.ID, &user.Name, &user.IsAdmin)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil // user not found
+		}
+		return nil, err // other error
+	}
+
+	// Retrieve the user's authentication info from the database
+	var authInfo UserAuthenticationInfo
+	err = db.QueryRow("SELECT id, user_id, password FROM UserAuthenticationInfo WHERE user_id = ?", user.ID).
+		Scan(&authInfo.ID, &authInfo.UserID, &authInfo.Password)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil // authentication info not found
+		}
+		return nil, err // other error
+	}
+
+	// Verify the password against the stored hash
+	err = bcrypt.CompareHashAndPassword([]byte(authInfo.Password), []byte(password))
+	if err != nil {
+		return nil, nil // incorrect password
+	}
+
+	// Password is correct, return the user
+	return &user, nil
+}
+
+
+
+
 
 
 func PackagesList(c *gin.Context) {
@@ -434,40 +536,6 @@ func PackagesList(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{})
 }
-
-
-// CreateAuthToken -
-func CreateAuthToken(c *gin.Context) {
-	username := c.PostForm("username")
-	password := c.PostForm("password")
-
-	// Check if the username and password are valid
-	if !isValidUser(username, password) {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, ErrorResponse{Message: "Invalid username or password"})
-			return
-	}
-
-	// Generate a new authentication token
-	token, err := generateToken(username)
-	if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorResponse{Message: "Server error"})
-			return
-	}
-
-	// Return the authentication token to the client
-	c.JSON(http.StatusOK, gin.H{"token": token})
-}
-
-
-
-
-
-
-
-
-
-
-
 
 
 // PackageByRegExGet - Get any packages fitting the regular expression.
@@ -501,10 +569,6 @@ func PackageByRegExGet(c *gin.Context) {
 
 	c.JSON(http.StatusOK, pkgs)
 }
-
-
-
-
 
 
 // PackageRate -
