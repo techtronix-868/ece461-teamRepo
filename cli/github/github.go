@@ -284,6 +284,9 @@ func get_dependencies(owner string, name string) int {
 	//fmt.Println(str)
 
 	parse_1 := strings.SplitAfter(str, "dependenciesCount:")
+	if len(parse_1) <= 1 {
+		return 0
+	}
 	//fmt.Println(parse_1[1])
 	parse_2 := fmt.Sprint(parse_1[1])
 	parse_3 := strings.Split(parse_2, "]")
@@ -357,7 +360,7 @@ func get_devDep(owner string, name string) int {
 
 func scoreRampUp(owner string, repo string) float64 {
 
-	dependencies := get_dependencies("nullivex", "nodist")
+	dependencies := get_dependencies(owner, repo)
 	devDep := get_devDep(owner, repo)
 
 	score := float64(devDep) / float64((dependencies + 1))
@@ -614,6 +617,9 @@ func scoreVersionPinning(dependencyVersionList []string) float64 {
 	// dependencyVersionList := getDependencyVersions(owner, repo)
 
 	numDependencies := len(dependencyVersionList)
+	if numDependencies == 0 {
+		return 1.0
+	}
 	numPinned := 0.0
 	for i := 0; i < numDependencies; i++ {
 		currDependency := dependencyVersionList[i]
