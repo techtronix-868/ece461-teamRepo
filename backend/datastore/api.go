@@ -508,11 +508,26 @@ func PackageRetrieve(c *gin.Context) {
 		return
 	}
 
+	// Authentication
+	authTokenHeader := c.Request.Header.Get("X-Authorization")
+	if authTokenHeader == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Authentication token not found in request header"})
+		return
+	}
+	username, password, err := ExtractUserInfoFromToken(authTokenHeader)
+	var pass string 
+	err = db.QueryRow("SELECT password FROM UserAuthenticationInfo WHERE user_id = (SELECT id FROM User WHERE name = ?)", username).Scan(&pass)
+	if err != nil || pass != password {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" + 
+		"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid." })
+		return
+	}
+		
 	packageID := strings.TrimLeft(c.Param("id"), "/")
 
 	var packageName, packageVersion, packageContent, packageURL, packageJSProgram string
 
-	err := db.QueryRow(`
+	err = db.QueryRow(`
 			SELECT m.Name, m.Version, d.Content, d.URL, d.JSProgram
 			FROM Package p
 			INNER JOIN PackageMetadata m ON p.metadata_id = m.id
@@ -521,17 +536,24 @@ func PackageRetrieve(c *gin.Context) {
 	`, packageID).Scan(&packageName, &packageVersion, &packageContent, &packageURL, &packageJSProgram)
 
 	if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"description":"Package does not exist."})
+		return
+	}
+
+	metadata := models.PackageMetadata {
+		ID: packageID,
+		Name: packageName,
+		Version: packageVersion,
+	}
+	data := models.PackageData {
+		Content: packageContent,
+		URL: packageURL,
+		JSProgram: packageJSProgram,
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-			"package_id": packageID,
-			"name": packageName,
-			"version": packageVersion,
-			"content": packageContent,
-			"url": packageURL,
-			"js_program": packageJSProgram,
+		"metadata": metadata,
+		"data": data,
 	})
 }
 
@@ -541,36 +563,62 @@ func RegistryReset(c *gin.Context) {
 	if !ok {
 		return
 	}
+	// Authentication
+	authTokenHeader := c.Request.Header.Get("X-Authorization")
+	if authTokenHeader == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Authentication token not found in request header"})
+		return
+	}
+	username, password, err := ExtractUserInfoFromToken(authTokenHeader)
+	var pass string 
+	err = db.QueryRow("SELECT password FROM UserAuthenticationInfo WHERE user_id = (SELECT id FROM User WHERE name = ?)", username).Scan(&pass)
+	if err != nil || pass != password {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" + 
+		"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid." })
+		return
+	}
+
+	// verify admin status	
+	var isAdmin bool 
+	err = db.QueryRow("SELECT isAdmin FROM User WHERE name ?", username).Scan(&isAdmin)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
+	}
+	if (!isAdmin) {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"description": "You do not have permission to reset the registry"})
+		return
+	}
 
 	// Delete all data from Package table
-	_, err := db.Exec("DELETE FROM Package")
+	_, err = db.Exec("DELETE FROM Package")
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
 	}
 
 	// Delete all data from PackageData table
 	_, err = db.Exec("DELETE FROM PackageData")
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
 	}
 
 	// Delete all data from PackageHistoryEntry table
 	_, err = db.Exec("DELETE FROM PackageHistoryEntry")
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
 	}
 
 	// Delete all data from PackageMetadata table
 	_, err = db.Exec("DELETE FROM PackageMetadata")
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Registry reset complete"})
+	c.JSON(http.StatusOK, gin.H{"description": "Registry is reset"})
 }
 
 // PacakgeByNameGet - 
@@ -578,6 +626,21 @@ func PackageByNameGet(c *gin.Context) {
 	// Return the history of this package (all versions).
 	db, ok := getDB(c)
 	if !ok {
+		return
+	}
+
+	// Authentication
+	authTokenHeader := c.Request.Header.Get("X-Authorization")
+	if authTokenHeader == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Authentication token not found in request header"})
+		return
+	}
+	username, password, err := ExtractUserInfoFromToken(authTokenHeader)
+	var pass string 
+	err = db.QueryRow("SELECT password FROM UserAuthenticationInfo WHERE user_id = (SELECT id FROM User WHERE name = ?)", username).Scan(&pass)
+	if err != nil || pass != password {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" + 
+		"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid." })
 		return
 	}
 
@@ -591,8 +654,8 @@ func PackageByNameGet(c *gin.Context) {
 		"JOIN PackageHistoryEntry phe ON p.metadata_id = phe.package_metadata_id " +
 		"WHERE pmd.Name = ?", name)
 
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if rows == nil || err != nil {
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"description": "No such package."})
 		return
 	}
 	defer rows.Close()
@@ -606,7 +669,7 @@ func PackageByNameGet(c *gin.Context) {
 		err := rows.Scan(&packageMetadata.Name, &packageMetadata.Version, &packageMetadata.ID,
 			&packageHistoryEntry.User, &packageHistoryEntry.Date, &packageHistoryEntry.Action)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 			return
 		}
 		packageMetadata.ID = "" // Set ID to "" since it's not needed
@@ -616,7 +679,7 @@ func PackageByNameGet(c *gin.Context) {
 
 	// Check for errors during iteration
 	if err := rows.Err(); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
 	}
 
