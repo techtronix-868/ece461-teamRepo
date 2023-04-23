@@ -2,7 +2,8 @@ import { Component, Input, OnInit } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, ParamMap, Route, Router } from '@angular/router';
 import { DefaultService, ModelPackage, PackageMetadata } from 'generated';
-import { PackageQuery } from 'generated';
+import { PackageQuery, PackageData} from 'generated';
+import { Buffer } from 'buffer';
 @Component({
   selector: 'app-package-results',
   templateUrl: './package-results.component.html',
@@ -60,6 +61,22 @@ export class PackageResultsComponent implements OnInit {
         this._snackbar.open(error.message, "ok")
       })
     }
+  }
+
+
+  download(id: string) {
+    this._snackbar.open("Downloading...")
+    this.service.packageRetrieve("", id).subscribe(body => {
+      const data = Buffer.from(body.data.Content!, 'base64').toString('binary')
+      const blob = new Blob([data], {
+        type: 'application/zip'
+      });
+      const url = window.URL.createObjectURL(blob)
+      window.open(url)
+      this._snackbar.dismiss()
+    }, error => {
+      this._snackbar.open(error.message, "ok")
+    })
   }
 
   update(pkg: PackageMetadata) {

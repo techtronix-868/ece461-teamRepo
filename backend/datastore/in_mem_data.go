@@ -1,6 +1,7 @@
 package datastore
 
 import (
+	"encoding/base64"
 	"fmt"
 	"log"
 	"net/http"
@@ -26,7 +27,7 @@ func (md *InMemoryDatstore) initIfEmpty() {
 				ID:      strconv.Itoa(i),
 			}
 			pkg_data := models.PackageData{
-				Content:   "Content",
+				Content:   base64.RawStdEncoding.EncodeToString([]byte("TEST")),
 				JSProgram: "string",
 			}
 			pkg := models.Package{Data: pkg_data, Metadata: pkg_meta}
