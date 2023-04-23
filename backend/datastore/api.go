@@ -686,9 +686,6 @@ func PackageByNameGet(c *gin.Context) {
 	c.JSON(http.StatusOK, packageHistoryEntries)
 }
 
-
-
-
 func PackagesList(c *gin.Context) {
 	// // Parse the request body as an array of PackageQuery objects
 	// var queries []models.PackageQuery
