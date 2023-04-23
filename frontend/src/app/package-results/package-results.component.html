@@ -17,12 +17,16 @@
             <div class="options">
                 <button class="btn btn-danger" (click)="delete(pkg.ID)"><i class="far fa-trash-can"></i></button>
                 <button class="btn btn-primary" (click)="rate(pkg.ID, pkg.Name)"><i class="fas fa-star-half-stroke"></i></button>
-                <button class="btn btn-warning"><i class="fas fa-pencil"></i></button>
+                <button class="btn btn-warning" (click)="update(pkg)"><i class="fas fa-pencil"></i></button>
                 <button class="btn btn-primary"><i class="fas fa-download"></i></button>
+                <button class="btn btn-danger" (click)="deleteByName(pkg.Name)"><i class="fas fa-filter-circle-xmark"></i></button>
             </div>
         </ng-template>
     </mdb-accordion-item>
 </mdb-accordion>
+<div *ngIf="offset!=''">
+    <button (click)="searchByNameVersion()">Load More</button>
+</div>
 <div *ngIf="!packages">
     <h1>No Packages Were found</h1>
 </div>

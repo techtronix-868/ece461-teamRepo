@@ -1,7 +1,7 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, ParamMap, Route, Router } from '@angular/router';
-import { DefaultService, PackageMetadata } from 'generated';
+import { DefaultService, ModelPackage, PackageMetadata } from 'generated';
 import { PackageQuery } from 'generated';
 @Component({
   selector: 'app-package-results',
@@ -13,7 +13,10 @@ export class PackageResultsComponent implements OnInit {
   @Input() version?: string;
   @Input() regex?: string;
 
+  offset: string = ""
+
   packages!: PackageMetadata[];
+
 
   constructor (private route: ActivatedRoute, private service: DefaultService, private _snackbar: MatSnackBar, private router: Router) {}
 
@@ -33,26 +36,34 @@ export class PackageResultsComponent implements OnInit {
  
     var queries = [query]
 
-    this.service.packagesList(queries, "").subscribe(body => {
-      this.packages = body;
+    this.service.packagesList(queries, "", this.offset, "response").subscribe(response => {
+      this.packages = response.body!;
+      this.offset = response.headers.get("offset")!;
       console.log(this.packages);
       this._snackbar.dismiss()
     }, error => {
       this._snackbar.open(error.message)
     })
-    // TODO: Deal with pagination
+
   }
 
   rate(id: string, name: string) {
     this.router.navigate(['/package'], {queryParams : {id: id, name: name}})
-    /*
-    this.service.packageRate(id, "").subscribe(body => {
-      console.log("Rating: ", id)
-      console.log("Reponse: ", body)
-    }, error => {
-      this._snackbar.open(error.message, "ok")
-      //this._snackbar.open()
-    }) */
+  }
+
+
+  deleteByName(name: string) {
+    if (confirm("Are you sure you want to delete all packages with that name?")) {
+      this.service.packageByNameDelete("", name).subscribe(body => {
+        this.packages = this.packages.filter(item => item.Name != name)
+      }, error => {
+        this._snackbar.open(error.message, "ok")
+      })
+    }
+  }
+
+  update(pkg: PackageMetadata) {
+    this.router.navigate(['/update'], {queryParams: {name: pkg.Name, version: pkg.Version, id: pkg.ID}})
   }
 
 
