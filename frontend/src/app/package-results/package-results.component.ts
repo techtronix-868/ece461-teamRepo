@@ -68,7 +68,11 @@ export class PackageResultsComponent implements OnInit {
     this._snackbar.open("Downloading...")
     this.service.packageRetrieve("", id).subscribe(body => {
       const data = Buffer.from(body.data.Content!, 'base64').toString('binary')
-      const blob = new Blob([data], {
+      var decodeData = new Array(data.length);
+      for (let i = 0; i < data.length; i++) {
+        decodeData[i] = data.charCodeAt(i)
+      }
+      const blob = new Blob(decodeData, { 
         type: 'application/zip'
       });
       const url = window.URL.createObjectURL(blob)
