@@ -45,43 +45,6 @@ func getDB(c *gin.Context) (*sql.DB, bool) {
 	return db, true
 }
 
-// func VerifyPassword(username string, password string) (*User, error) {
-// 	db, ok := getDB(c)
-// 	if !ok {
-// 		return
-// 	}
-// 	// Retrieve the user from the database
-// 	var user User
-// 	err := db.QueryRow("SELECT id, name, isAdmin FROM User WHERE name = ?", username).
-// 		Scan(&user.ID, &user.Name, &user.IsAdmin)
-// 	if err != nil {
-// 		if err == sql.ErrNoRows {
-// 			return nil, nil // user not found
-// 		}
-// 		return nil, err // other error
-// 	}
-
-// 	// Retrieve the user's authentication info from the database
-// 	var authInfo UserAuthenticationInfo
-// 	err = db.QueryRow("SELECT id, user_id, password FROM UserAuthenticationInfo WHERE user_id = ?", user.ID).
-// 		Scan(&authInfo.ID, &authInfo.UserID, &authInfo.Password)
-// 	if err != nil {
-// 		if err == sql.ErrNoRows {
-// 			return nil, nil // authentication info not found
-// 		}
-// 		return nil, err // other error
-// 	}
-
-// 	// Verify the password against the stored hash
-// 	err = bcrypt.CompareHashAndPassword([]byte(authInfo.Password), []byte(password))
-// 	if err != nil {
-// 		return nil, nil // incorrect password
-// 	}
-
-// 	// Password is correct, return the user
-// 	return &user, nil
-// }
-
 func ExtractUserInfoFromToken(tokenString string) (string, string, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		// Verify that the signing method is HMAC and the secret matches
@@ -108,10 +71,8 @@ func ExtractUserInfoFromToken(tokenString string) (string, string, error) {
 				return "", "", fmt.Errorf("invalid claims")
 		}
 		return username, password, nil
-}
-
-return "", "", fmt.Errorf("invalid token")
-
+	}
+	return "", "", fmt.Errorf("invalid token")
 }
 
 /*  API Endpoints */
@@ -208,51 +169,58 @@ func CreateAuthToken(c *gin.Context) {
 }
 
 
-// historyentry
 func PackageCreate(c *gin.Context) {
+	// Get Database
 	db, ok := getDB(c)
 	if !ok {
 		return
 	}
-
+	// Authentication
 	authTokenHeader := c.Request.Header.Get("X-Authorization")
 	if authTokenHeader == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Authentication token not found in request header"})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Authentication token not found in request header"})
 		return
 	}
-
 	username, password, err := ExtractUserInfoFromToken(authTokenHeader)
-	
-	fmt.Print(username)
-	fmt.Print(password)
-	fmt.Print("here")
 	var pass string 
 	err = db.QueryRow("SELECT password FROM UserAuthenticationInfo WHERE user_id = (SELECT id FROM User WHERE name = ?)", username).Scan(&pass)
 	if err != nil || pass != password {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" + 
+		"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid." })
 		return
 	}
 
-
-	// process request
+	// Process Request
 	var pkg models.Package
 	if err := c.ShouldBindJSON(&pkg); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" + 
+		"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid." })
+		return
+	}
+	data := pkg.Data
+	metadata := pkg.Metadata
+
+  // Verify that only one of Content and URl are set
+	dataURLEmpty := len(data.URL) == 0
+	dataContentEmpty := len(data.Content) == 0
+	if (!((dataURLEmpty && !dataContentEmpty) || (!dataURLEmpty && dataContentEmpty))) { // XOR
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" + 
+		"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid." })
 		return
 	}
 
-
-	// Insert PackageMetadata
-	metadata := pkg.Metadata
+	// Check Rating
+	
+	
+	// PackageMetadata
 	paramID := strings.TrimLeft(c.Param("id"), "/")
 
 	var count int
 	err = db.QueryRow("SELECT COUNT(*) FROM PackageMetadata WHERE PackageID = ?", paramID).Scan(&count)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to query database"})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error5"})
 		return
 	}
-
 	// Generate new ID if package ID already exists or if the id is not specified
 	if count > 0 || paramID == "" {
 		for {
@@ -266,7 +234,7 @@ func PackageCreate(c *gin.Context) {
 
 			err = db.QueryRow("SELECT COUNT(*) FROM PackageMetadata WHERE PackageID = ?", newID).Scan(&count)
 			if err != nil {
-				c.AbortWithStatusJSON(http.StatusInternalServerError, models.Error{Code: 500, Message: "Failed to check if package ID exists"})
+				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error6"})
 				return
 			}
 			if count == 0 {
@@ -276,66 +244,79 @@ func PackageCreate(c *gin.Context) {
 		}
 	}
 
+	// Insert PackageMetadata
 	result, err := db.Exec("INSERT INTO PackageMetadata (Name, Version, PackageID) VALUES (?, ?, ?)", metadata.Name, metadata.Version, paramID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusConflict, gin.H{"description": "Package exists already." })
 		return
 	}
 
 	metadataID, err := result.LastInsertId()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error7"})
 		return
 	}
 
 	// Insert PackageData
-	data := pkg.Data
-	result, err = db.Exec("INSERT INTO PackageData (Content, URL, JSProgram) VALUES (?, ?, ?)", data.Content, data.URL, data.JSProgram)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+	var dataID int64
+	if (dataURLEmpty) {
+		result, err := db.Exec("INSERT INTO PackageData (Content, JSProgram) VALUES (?, ?)", data.Content, data.JSProgram)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error1"})
+			return
+		}
+		dataID, err = result.LastInsertId()
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error2"})
+			return
+		}
+	} else if (dataContentEmpty) {
+		result, err := db.Exec("INSERT INTO PackageData (URL, JSProgram) VALUES (?, ?)", data.URL, data.JSProgram)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error3"})
+			return
+		}
+		dataID, err = result.LastInsertId()
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error4"})
+			return
+		}
 	}
-	dataID, err := result.LastInsertId()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
+		
 	// Insert Package
 	result, err = db.Exec("INSERT INTO Package (metadata_id, data_id) VALUES (?, ?)", metadataID, dataID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error8"})
 		return
 	}
 
-	
-
+	// Insert PackageHistoryEntry
 	var User_temp models.User
 	User_temp.Name = username
 	User_temp.IsAdmin = false
-
 	packageHistoryEntry := models.PackageHistoryEntry{
 		User: User_temp,
 		Date: time.Now(),
 		PackageMetadata: metadata,
 		Action: "Create",
 	}
-
 	var user_table_id int
 	err = db.QueryRow("SELECT user.id FROM User WHERE user.name= ?", User_temp.Name).Scan(&user_table_id)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to query database"})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error9"})
 		return
 	}
-
 	result, err = db.Exec("INSERT INTO PackageHistoryEntry (user_id, date, package_metadata_id, action) VALUES (?, ?, ?, ?)", user_table_id, packageHistoryEntry.Date, metadataID, packageHistoryEntry.Action)
 	if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 	}
 
-	// CHANGE RESPONSE
-	c.JSON(http.StatusCreated, models.PackageMetadata{Name: metadata.Name, Version: metadata.Version, ID: paramID})
+	// Successful Response
+	c.JSON(http.StatusCreated, gin.H{
+		"metadata": metadata,
+		"data": data,
+	})
 }
 
 // PackageUpdate - Update this content of the package.
