@@ -6,11 +6,11 @@ import (
 	// "errors"
 	"log"
 	"net/http"
+	"fmt"
 	"strings"
 	// "strconv"
 	"math/rand"
 	"time"
-	// "fmt"
 	"os"
 	"github.com/gin-gonic/gin"
 	"github.com/mabaums/ece461-web/backend/models"
@@ -24,10 +24,9 @@ type AuthenticationToken string
 
 type UserCredentials struct {
 	Name string `json:"username"`
+	isAdmin bool `json:"isAdmin"`
 	Password string `json:"password"`
 }
-
-
 
 
 
@@ -83,28 +82,37 @@ func getDB(c *gin.Context) (*sql.DB, bool) {
 // 	return &user, nil
 // }
 
-// func ExtractUserIDFromToken(tokenString string) (string, error) {
-// 	// Parse the JWT token string
-// 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-// 		// Validate the signing method
-// 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-// 			return nil, jwt.NewValidationError("Unexpected signing method", jwt.ValidationErrorSignatureInvalid)
-// 		}
-// 		// Get the secret key used to sign the token
-// 		secretKey := []byte("your-secret-key")
-// 		return secretKey, nil
-// 	})
-// 	if err != nil {
-// 		return "", err
-// 	}
-// 	// Extract the user ID from the token claims
-// 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-// 		if userID, ok := claims["user_id"].(string); ok {
-// 			return userID, nil
-// 		}
-// 	}
-// 	return "", jwt.NewValidationError("User ID not found in token", jwt.ValidationErrorClaimsInvalid)
-// }
+func ExtractUserInfoFromToken(tokenString string) (string, string, error) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		// Verify that the signing method is HMAC and the secret matches
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		err := godotenv.Load()
+		if err != nil {
+			log.Fatal("Error loading .env file")
+		}
+
+		secret_key := os.Getenv("SECRET_KEY")   
+		return []byte(secret_key), nil
+	})
+	if err != nil {
+		return "",  "", err
+	}
+
+	// Extract the "user_name" claim from the token
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		username, ok1 := claims["username"].(string)
+		password, ok2 := claims["password"].(string)
+		if !ok1 || !ok2 {
+				return "", "", fmt.Errorf("invalid claims")
+		}
+		return username, password, nil
+}
+
+return "", "", fmt.Errorf("invalid token")
+
+}
 
 /*  API Endpoints */
 
@@ -120,7 +128,7 @@ func CreateUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	result, err := db.Exec("INSERT INTO User (name, isAdmin) VALUES (?, ?)", info.Name, false)
+	result, err := db.Exec("INSERT INTO User (name, isAdmin) VALUES (?, ?)", info.Name, info.isAdmin)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -138,6 +146,7 @@ func CreateUser(c *gin.Context) {
 	}
 	c.JSON(http.StatusCreated, gin.H{"Message": "created user"})
 }
+
 
 func CreateAuthToken(c *gin.Context) {
 	db, ok := getDB(c)
@@ -175,35 +184,56 @@ func CreateAuthToken(c *gin.Context) {
 	// 	return
 	// }
 
-	// Create JWT token
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id": authReq.User.Name,
-		// Add any other relevant user info to the token
-	})
+	// Create the claims for the JWT token
+	claims := jwt.MapClaims{}
+	claims["username"] = authReq.User.Name
+	claims["password"] = authReq.Secret.Password
+	claims["exp"] = time.Now().Add(time.Hour * 1).Unix() // token expires in 1 hour
 
+	// Create the JWT token with HMAC SHA-256 signing
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	// Sign the token with a secret key
 	err = godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
-
-	secret_key := os.Getenv("SECRET_KEY")      
-
-	// Sign the token with a secret key
-	secretKey := []byte(secret_key) // Replace with your own secret key
-	tokenString, err := token.SignedString(secretKey)
+	secret_key := os.Getenv("SECRET_KEY")  
+	secret := []byte(secret_key)
+	tokenString, err := token.SignedString(secret)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
-	//Return the token as a response
-	c.JSON(http.StatusOK, AuthenticationToken(tokenString))
+	c.String(http.StatusOK, "Bearer "+tokenString)
 }
 
 
-
-	// historyentry
+// historyentry
 func PackageCreate(c *gin.Context) {
+	db, ok := getDB(c)
+	if !ok {
+		return
+	}
+
+	authTokenHeader := c.Request.Header.Get("X-Authorization")
+	if authTokenHeader == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Authentication token not found in request header"})
+		return
+	}
+
+	username, password, err := ExtractUserInfoFromToken(authTokenHeader)
+	
+	fmt.Print(username)
+	fmt.Print(password)
+	fmt.Print("here")
+	var pass string 
+	err = db.QueryRow("SELECT password FROM UserAuthenticationInfo WHERE user_id = (SELECT id FROM User WHERE name = ?)", username).Scan(&pass)
+	if err != nil || pass != password {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
+		return
+	}
+
+
 	// process request
 	var pkg models.Package
 	if err := c.ShouldBindJSON(&pkg); err != nil {
@@ -211,18 +241,13 @@ func PackageCreate(c *gin.Context) {
 		return
 	}
 
-	// connect to DB
-	db, ok := getDB(c)
-	if !ok {
-		return
-	}
 
 	// Insert PackageMetadata
 	metadata := pkg.Metadata
 	paramID := strings.TrimLeft(c.Param("id"), "/")
 
 	var count int
-	err := db.QueryRow("SELECT COUNT(*) FROM PackageMetadata WHERE PackageID = ?", paramID).Scan(&count)
+	err = db.QueryRow("SELECT COUNT(*) FROM PackageMetadata WHERE PackageID = ?", paramID).Scan(&count)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to query database"})
 		return
@@ -283,37 +308,33 @@ func PackageCreate(c *gin.Context) {
 		return
 	}
 
-	// authTokenHeader := c.Request.Header.Get("X-Authorization")
-	// if authTokenHeader == "" {
-	// 	c.JSON(http.StatusBadRequest, gin.H{"error": "Authentication token not found in request header"})
-	// 	return
-	// }
-	// // Parse the authentication token
-	// var authToken AuthenticationToken
-	// if err := c.ShouldBindHeader(&authToken); err != nil {
-	// 	c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-	// 	return
-	// }
-	// // Extract the user ID from the token
-	// userID, err := ExtractUserIDFromToken(authToken.Token)
-	// if err != nil {
-	// 	c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-	// 	return
-	// }
+	
 
-	// packageHistoryEntry := models.PackageHistoryEntry{
-	// 	User: userID
-	// 	Date: time.Now().Unix(),
-	// 	PackageMetaData: paramID,
-	// 	Action: "Create",
-	// }
+	var User_temp models.User
+	User_temp.Name = username
+	User_temp.IsAdmin = false
 
-	// result, err = db.Exec("INSERT INTO PackageHistoryEntry (user_id, date, package_metadata_id, action) VALUES (?, ?, ?,", packageHistoryEntry.PackageID, packageHistoryEntry.Action, packageHistoryEntry.Time)
-	// if err != nil {
-	// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-	// 		return
-	// }
+	packageHistoryEntry := models.PackageHistoryEntry{
+		User: User_temp,
+		Date: time.Now(),
+		PackageMetadata: metadata,
+		Action: "Create",
+	}
 
+	var user_table_id int
+	err = db.QueryRow("SELECT user.id FROM User WHERE user.name= ?", User_temp.Name).Scan(&user_table_id)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to query database"})
+		return
+	}
+
+	result, err = db.Exec("INSERT INTO PackageHistoryEntry (user_id, date, package_metadata_id, action) VALUES (?, ?, ?, ?)", user_table_id, packageHistoryEntry.Date, metadataID, packageHistoryEntry.Action)
+	if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+	}
+
+	// CHANGE RESPONSE
 	c.JSON(http.StatusCreated, models.PackageMetadata{Name: metadata.Name, Version: metadata.Version, ID: paramID})
 }
 
