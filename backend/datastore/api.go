@@ -322,30 +322,47 @@ func PackageCreate(c *gin.Context) {
 // PackageUpdate - Update this content of the package.
 // historyentry
 func PackageUpdate(c *gin.Context) {
+	db, ok := getDB(c)
+	if !ok {
+		return
+	}
+
+	// Authentication
+	authTokenHeader := c.Request.Header.Get("X-Authorization")
+	if authTokenHeader == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Authentication token not found in request header"})
+		return
+	}
+	username, password, err := ExtractUserInfoFromToken(authTokenHeader)
+	var pass string 
+	err = db.QueryRow("SELECT password FROM UserAuthenticationInfo WHERE user_id = (SELECT id FROM User WHERE name = ?)", username).Scan(&pass)
+	if err != nil || pass != password {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" + 
+		"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid." })
+		return
+	}
+
 	var pkg models.Package
 	if err := c.ShouldBindJSON(&pkg); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 	}
 
-	db, ok := getDB(c)
-	if !ok {
-		return
-	}
 
 	metadata := pkg.Metadata
 	var existingPackage models.Package
-	var package_id int;
+	var package_data_id int;
+	var package_metadata_id int;
 
-	err := db.QueryRow("SELECT p.id, pmd.Name, pmd.Version, pmd.PackageID "+
+	err = db.QueryRow("SELECT p.data_id, pmd.id, pmd.Name, pmd.Version, pmd.PackageID "+
 			"FROM Package p "+
 			"JOIN PackageMetadata pmd ON p.metadata_id = pmd.id "+
 			"WHERE pmd.Name = ? AND pmd.Version = ? AND pmd.PackageID = ?",
 			metadata.Name, metadata.Version, metadata.ID).Scan(
-			&package_id, &existingPackage.Metadata.Name, &existingPackage.Metadata.Version, &existingPackage.Metadata.ID,
+			&package_data_id, &package_metadata_id, &existingPackage.Metadata.Name, &existingPackage.Metadata.Version, &existingPackage.Metadata.ID,
 	)
 	if err == sql.ErrNoRows {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Package not found1", "name": metadata.Name, "version":metadata.Version, "id":metadata.ID})
+		c.JSON(http.StatusNotFound, gin.H{"description": "Package does not exist" })
 		return
 	} else if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -355,12 +372,35 @@ func PackageUpdate(c *gin.Context) {
 	// Update package data
 	packageData := pkg.Data
 	_, err = db.Exec("UPDATE PackageData pd SET Content = ?, URL = ?, JSProgram = ? WHERE pd.id = ? ",
-		packageData.Content, packageData.URL, packageData.JSProgram, package_id)
+		packageData.Content, packageData.URL, packageData.JSProgram, package_data_id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "Package updated"})
+
+	// Insert PackageHistoryEntry
+	var User_temp models.User
+	User_temp.Name = username
+	User_temp.IsAdmin = false
+	packageHistoryEntry := models.PackageHistoryEntry{
+		User: User_temp,
+		Date: time.Now(),
+		PackageMetadata: metadata,
+		Action: "Update",
+	}
+	var user_table_id int
+	err = db.QueryRow("SELECT user.id FROM User WHERE user.name= ?", User_temp.Name).Scan(&user_table_id)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error9"})
+		return
+	}
+	_, err = db.Exec("INSERT INTO PackageHistoryEntry (user_id, date, package_metadata_id, action) VALUES (?, ?, ?, ?)", user_table_id, packageHistoryEntry.Date, package_metadata_id, packageHistoryEntry.Action)
+	if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"description": "Version is updated"})
 }	
 
 // PackageDelete - Delete this version of the package. given packageid
