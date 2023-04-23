@@ -1,16 +1,17 @@
 package npm
 
 import (
+	git "app/git"
+	lg "app/lg"
 	nd "app/output"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-
-	git "app/git"
-	lg "app/lg"
 	"net/http"
 	"strconv"
 	"strings"
+
+	maps "golang.org/x/exp/maps"
 )
 
 type Connect_npm struct {
@@ -99,17 +100,6 @@ type Package struct {
 	} `json:"evaluation"`
 }
 
-// Values returns the values of the map m.
-// The values will be in an indeterminate order.
-// FUNCTION PULLED FROM https://cs.opensource.google/go/x/exp/+/9ff063c7:maps/maps.go;l=20
-func Values[M ~map[K]V, K comparable, V any](m M) []V {
-	r := make([]V, 0, len(m))
-	for _, v := range m {
-		r = append(r, v)
-	}
-	return r
-}
-
 func (cn Connect_npm) Data(packageName string) *nd.NdJson {
 	cn.URL = packageName
 
@@ -153,7 +143,7 @@ func (cn Connect_npm) Data(packageName string) *nd.NdJson {
 	lg.InfoLogger.Println("Setting License: ", cn.License)
 	cn.Dependencies = len(pkg.Collected.Metadata.Dependencies)
 	lg.InfoLogger.Println("Setting Dependenices: ", cn.Dependencies)
-	cn.DependencyVersions = Values(pkg.Collected.Metadata.Dependencies)
+	cn.DependencyVersions = maps.Values(pkg.Collected.Metadata.Dependencies)
 	lg.InfoLogger.Println("Setting Dependency Versions: ", cn.DependencyVersions)
 	cn.DevDeps = len(pkg.Collected.Metadata.DevDependencies)
 	lg.InfoLogger.Println("Setting DevDeps: ", cn.DevDeps)
@@ -190,7 +180,7 @@ func (cn Connect_npm) Score() *nd.NdJson {
 	}
 	overallScore := 0.4*cn.get_responsivnesss() + 0.1*cn.get_bus_factor() + 0.2*cn.get_License_score() + 0.1*cn.get_rampup_score() + 0.2*cn.get_correctness() + 0.0*cn.getDependencyVersionsScore()
 	nd := new(nd.NdJson)
-	nd = nd.DataToNd(cn.URL, overallScore, cn.get_rampup_score(), cn.get_bus_factor(), cn.get_responsivnesss(), cn.get_correctness(), cn.get_License_score(), cn.getDependencyVersionsScore())
+	nd = nd.DataToNd(cn.URL, overallScore, cn.get_rampup_score(), cn.get_bus_factor(), cn.get_responsivnesss(), cn.get_correctness(), cn.get_License_score(), cn.getDependencyVersionsScore(), 0.0)
 	return nd
 }
 

@@ -17,6 +17,7 @@ type NdJson struct {
 	RESPONSIVE_MAINTAINER_SCORE float64
 	LICENSE_SCORE               float64
 	VERSION_PINNING_SCORE       float64
+	ENGINEERING_PROCESS_SCORE   float64
 }
 
 type ByOverallScore []*NdJson
@@ -34,7 +35,7 @@ func (a ByOverallScore) Less(i, j int) bool {
 	return a[i].NET_SCORE > a[j].NET_SCORE
 }
 
-func (nd *NdJson) DataToNd(_package string, NET_SCORE float64, _Ramp_up_score float64, _Bus_factor float64, _Responsiveness float64, _Correctness float64, _License_compatability float64, _VersionPinning float64) *NdJson {
+func (nd *NdJson) DataToNd(_package string, NET_SCORE float64, _Ramp_up_score float64, _Bus_factor float64, _Responsiveness float64, _Correctness float64, _License_compatability float64, _VersionPinning float64, _EngineeringProcess float64) *NdJson {
 	nd.URL = _package
 	nd.NET_SCORE = math.Round(NET_SCORE*100) / 100
 	nd.RAMP_UP_SCORE = math.Round(_Ramp_up_score*100) / 100
@@ -43,6 +44,7 @@ func (nd *NdJson) DataToNd(_package string, NET_SCORE float64, _Ramp_up_score fl
 	nd.LICENSE_SCORE = math.Round(_License_compatability*100) / 100
 	nd.CORRECTNESS_SCORE = math.Round(_Correctness*100) / 100
 	nd.VERSION_PINNING_SCORE = math.Round(_VersionPinning*100) / 100
+	nd.ENGINEERING_PROCESS_SCORE = math.Round(_EngineeringProcess*100) / 100
 
 	return nd
 }

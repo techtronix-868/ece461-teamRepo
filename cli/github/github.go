@@ -643,6 +643,82 @@ func scoreVersionPinning(dependencyVersionList []string) float64 {
 	return score
 }
 
+func getEngineeringProcessData(owner string, name string) (int, int) {
+
+	type Data struct {
+		Repository struct {
+			PullRequests struct {
+				TotalCount int `json:"totalCount"`
+				Nodes      []struct {
+					ID        string `json:"id"`
+					Additions int    `json:"additions"`
+					Reviews   struct {
+						TotalCount int `json:"totalCount"`
+					} `json:"reviews"`
+				} `json:"nodes"`
+			} `json:"pullRequests"`
+		} `json:"repository"`
+	}
+
+	graphqlClient := graphql.NewClient("https://api.github.com/graphql")
+
+	graphqlRequest := graphql.NewRequest(`
+      query ($own: String!, $repo: String!)  {
+        repository(owner: $own, name: $repo) {
+          pullRequests(last: 100) {
+			totalCount
+            nodes {
+              id
+			  additions
+			  reviews(last: 100) {
+				totalCount
+			  }
+            }
+		  }
+        }
+      }
+    
+
+    `)
+
+	graphqlRequest.Var("own", owner)
+	graphqlRequest.Var("repo", name)
+
+	graphqlRequest.Header.Set("Authorization", "Bearer "+GITHUB_TOKEN)
+	graphqlRequest.Header.Set("Accept", "application/vnd.github.hawkgirl-preview+json")
+
+	var res Data
+
+	if err := graphqlClient.Run(context.Background(), graphqlRequest, &res); err != nil {
+		lg.ErrorLogger.Println("Unable to get engineering process data through GrpahQL API in github.go")
+		fmt.Println((err))
+		os.Exit(1)
+	}
+
+	totAdditions := 0
+	totAdditionsWithReview := 0
+	numPulls := len(res.Repository.PullRequests.Nodes)
+	for i := 0; i < numPulls; i++ {
+		currPullReq := res.Repository.PullRequests.Nodes[i]
+		reqAddtions := currPullReq.Additions
+		totAdditions += reqAddtions
+		if currPullReq.Reviews.TotalCount >= 1 {
+			totAdditionsWithReview += reqAddtions
+		}
+
+	}
+	// fmt.Printf("name: %s, numpulls:%d, tot:%d , rev: %d\n", name, numPulls, totAdditions, totAdditionsWithReview)
+	return totAdditionsWithReview, totAdditions
+
+}
+
+func scoreEngineeringProcess(totAdditionsWithReview int, totAdditions int) float64 {
+	if totAdditions == 0 {
+		return 0.0
+	}
+	return float64(totAdditionsWithReview) / float64(totAdditions)
+}
+
 func Score(URL string) *nd.NdJson {
 
 	cuttingByTwo := strings.FieldsFunc(URL, func(r rune) bool {
@@ -666,12 +742,14 @@ func Score(URL string) *nd.NdJson {
 	depVersionList := getDependencyVersions(owner, repo)
 
 	versionPinning := scoreVersionPinning(depVersionList)
+	totAdditionsWithReview, totAdditions := getEngineeringProcessData(owner, repo)
+	engineeringProcess := scoreEngineeringProcess(totAdditionsWithReview, totAdditions)
 	//Update weights
-	overallScore = 0.4*responsiveness + 0.1*busFactor + 0.2*license + 0.1*rampUp + 0.2*correctness + 0.0*versionPinning
+	overallScore = 0.4*responsiveness + 0.1*busFactor + 0.2*license + 0.1*rampUp + 0.2*correctness + 0.0*versionPinning + 0.0*engineeringProcess
 	lg.InfoLogger.Println("Finding overall score : ", overallScore)
 
 	nd := new(nd.NdJson)
-	nd = nd.DataToNd(URL, overallScore, rampUp, busFactor, responsiveness, correctness, license, versionPinning)
+	nd = nd.DataToNd(URL, overallScore, rampUp, busFactor, responsiveness, correctness, license, versionPinning, engineeringProcess)
 
 	return nd
 }
