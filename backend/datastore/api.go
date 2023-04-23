@@ -243,7 +243,7 @@ func PackageCreate(c *gin.Context) {
 			}
 		}
 	}
-
+	metadata.ID = paramID
 	// Insert PackageMetadata
 	result, err := db.Exec("INSERT INTO PackageMetadata (Name, Version, PackageID) VALUES (?, ?, ?)", metadata.Name, metadata.Version, paramID)
 	if err != nil {
@@ -410,24 +410,45 @@ func PackageDelete(c *gin.Context) {
 		return
 	}
 
-	packageID := strings.TrimLeft(c.Param("id"), "/")
-	var metadataID int
-	err := db.QueryRow("SELECT id FROM PackageMetadata WHERE PackageID = ?", packageID).Scan(&metadataID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "error1"})
+	// Authentication
+	authTokenHeader := c.Request.Header.Get("X-Authorization")
+	if authTokenHeader == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Authentication token not found in request header"})
 		return
 	}
-	_, err = db.Exec("DELETE p, pmd, pd, ph FROM Package p "+
-		"LEFT JOIN PackageMetaData pmd ON p.metadata_id = pmd.id "+
-		"LEFT JOIN PackageData pd ON p.data_id = pd.id "+
-		"LEFT JOIN PackageHistoryEntry ph ON p.metadata_id = ph.package_metadata_id "+
-		"WHERE p.metadata_id = ?", metadataID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "error2"})
+	username, password, err := ExtractUserInfoFromToken(authTokenHeader)
+	var pass string 
+	err = db.QueryRow("SELECT password FROM UserAuthenticationInfo WHERE user_id = (SELECT id FROM User WHERE name = ?)", username).Scan(&pass)
+	if err != nil || pass != password {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" + 
+		"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid." })
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Package deleted"})
+	packageID := strings.TrimLeft(c.Param("id"), "/")
+	var metadataID int
+	err = db.QueryRow("SELECT id FROM PackageMetadata WHERE PackageID = ?", packageID).Scan(&metadataID)
+	if err != nil {
+		c.AbortWithJSON(http.StatusNotFound, gin.H{"description": "Package does not exist"})
+		return
+		
+	}
+	_, err = db.Exec("DELETE FROM PackageHistoryEntry WHERE package_metadata_id = ?", metadataID)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
+	}
+
+	_, err = db.Exec("DELETE  pmd, pd, p FROM Package p "+
+		"LEFT JOIN PackageMetaData pmd ON p.metadata_id = pmd.id "+
+		"LEFT JOIN PackageData pd ON p.data_id = pd.id "+
+		"WHERE p.metadata_id = ?", metadataID)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"description": "Package is deleted"})
 }
 
 // PackageByNameDelete - Delete all versions of this package. return string of package name
