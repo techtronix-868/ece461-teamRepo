@@ -804,48 +804,63 @@ func getPackages(c *gin.Context, queryStrings []string, offset, limit int) ([]mo
 
 // PackageByRegExGet - Get any packages fitting the regular expression.
 func PackageByRegExGet(c *gin.Context) {
-	// // Parse the request body as a PackageRegEx object
-	// var query models.PackageRegEx
-	// err := c.ShouldBindJSON(&query)
-	// if err != nil {
-	// 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-	// 		return
-	// }
+	// Search for packages that match the regular expression
+	db, ok := getDB(c)
+	if !ok {
+		return
+	}
 
-	// // Search for packages that match the regular expression
-	// db, ok := getDB(c)
-	// if !ok {
-	// 	return
-	// }
+	// Authentication
+	authTokenHeader := c.Request.Header.Get("X-Authorization")
+	if authTokenHeader == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Authentication token not found in request header"})
+		return
+	}
+	username, password, err := ExtractUserInfoFromToken(authTokenHeader)
+	var pass string 
+	err = db.QueryRow("SELECT password FROM UserAuthenticationInfo WHERE user_id = (SELECT id FROM User WHERE name = ?)", username).Scan(&pass)
+	if err != nil || pass != password {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" + 
+		"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid." })
+		return
+	}
 
-	// var packages []models.PackageMetadata
-	// rows, err := db.Query("SELECT version, name, id FROM packages WHERE name REGEXP ? OR readme REGEXP ?", query.RegEx, query.RegEx)
-	// if err != nil {
-	// 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
-	// 		return
-	// }
-	// defer rows.Close()
-	// for rows.Next() {
-	// 		var pkg models.PackageMetadata
-	// 		err := rows.Scan(&pkg.Version, &pkg.Name, &pkg.ID)
-	// 		if err != nil {
-	// 				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
-	// 				return
-	// 		}
-	// 		packages = append(packages, pkg)
-	// }
-	// if err := rows.Err(); err != nil {
-	// 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
-	// 		return
-	// }
+	// Parse the request body as a PackageRegEx object
+	var query string
+	err = c.ShouldBindJSON(&query)
+	if err != nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+	}	
 
-	// // Return the packages as a JSON array
-	// if len(packages) > 0 {
-	// 		c.JSON(http.StatusOK, packages)
-	// } else {
-	// 		c.AbortWithStatus(http.StatusNotFound)
-	// }
-	// c.Json(http.StatusOK, gin.H{"message":"good"})
+	var packages []models.PackageMetadata
+	rows, err := db.Query("SELECT version, name, id FROM packagesmetadata WHERE name REGEXP ?", query)
+	if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+			return
+	}
+	defer rows.Close()
+	for rows.Next() {
+			var pkg models.PackageMetadata
+			err := rows.Scan(&pkg.Version, &pkg.Name, &pkg.ID)
+			if err != nil {
+					c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+					return
+			}
+			packages = append(packages, pkg)
+	}
+	if err := rows.Err(); err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+			return
+	}
+
+	// Return the packages as a JSON array
+	if len(packages) > 0 {
+			c.JSON(http.StatusOK, packages)
+	} else {
+			c.AbortWithStatus(http.StatusNotFound)
+	}
+	c.JSON(http.StatusOK, gin.H{"message":"good"})
 }
 
 // PackageRate -
