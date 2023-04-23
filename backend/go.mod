@@ -9,6 +9,7 @@ require (
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0 // indirect
+	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/bytedance/sonic v1.8.0 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect

@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"fmt"
 	"strings"
-	// "strconv"
+	"strconv"
 	"math/rand"
 	"time"
 	"os"
@@ -16,6 +16,7 @@ import (
 	"github.com/mabaums/ece461-web/backend/models"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/joho/godotenv"
+	"github.com/blang/semver"
 	_ "github.com/go-sql-driver/mysql"
 
 )
@@ -563,6 +564,7 @@ func RegistryReset(c *gin.Context) {
 	if !ok {
 		return
 	}
+
 	// Authentication
 	authTokenHeader := c.Request.Header.Get("X-Authorization")
 	if authTokenHeader == "" {
@@ -686,74 +688,119 @@ func PackageByNameGet(c *gin.Context) {
 	c.JSON(http.StatusOK, packageHistoryEntries)
 }
 
+
+
 func PackagesList(c *gin.Context) {
-	// // Parse the request body as an array of PackageQuery objects
-	// var queries []models.PackageQuery
-	// err := c.ShouldBindJSON(&queries)
-	// if err != nil {
-	// 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-	// 		return
-	// }
+	db, ok := getDB(c)
+	if !ok {
+		return
+	}
 
-	// // Get the offset parameter from the query string
-	// offsetStr := c.Query("offset")
-	// var offset int
-	// if offsetStr == "" {
-	// 		offset = 0
-	// } else {
-	// 		var err error
-	// 		offset, err = strconv.Atoi(offsetStr)
-	// 		if err != nil {
-	// 				c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid offset parameter"})
-	// 				return
-	// 		}
-	// }
+	// Authentication
+	authTokenHeader := c.Request.Header.Get("X-Authorization")
+	if authTokenHeader == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Authentication token not found in request header"})
+		return
+	}
+	username, password, err := ExtractUserInfoFromToken(authTokenHeader)
+	var pass string 
+	err = db.QueryRow("SELECT password FROM UserAuthenticationInfo WHERE user_id = (SELECT id FROM User WHERE name = ?)", username).Scan(&pass)
+	if err != nil || pass != password {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" + 
+		"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid." })
+		return
+	}
 
-	// db, ok := getDB(c)
-	// if !ok {
-	// 	return
-	// }
+	// Parse request body
+	var packageQueries []models.PackageQuery
+	err = c.BindJSON(&packageQueries)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-	// // Build the SQL query based on the queries and offset
-	// var query strings.Builder
-	// query.WriteString("SELECT * FROM PackageMetadata")
-	// if len(queries) > 0 {
-	// 		query.WriteString(" WHERE ")
-	// 		for i, q := range queries {
-	// 				if i > 0 {
-	// 						query.WriteString(" AND ")
-	// 				}
-	// 				query.WriteString(q.ToSQL())
-	// 		}
-	// }
-	// query.WriteString(fmt.Sprintf(" LIMIT %d, 10", offset))
+	var queryStrings []string
+    for _, packageQuery := range packageQueries {
+        if packageQuery.Name == "" {
+            c.JSON(http.StatusBadRequest, gin.H{"error": "PackageQuery object must have non-empty 'Name' field"})
+            return
+        }
+        queryString := packageQuery.Name
+        if packageQuery.Version != "" {
+					semverRange, err := semver.ParseRange(packageQuery.Version)
+					if err != nil {
+							c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+							return
+					}
+					queryString += fmt.Sprintf("@%s", semverRange)
+			}
+        queryStrings = append(queryStrings, queryString)
+    }
 
-	// // Execute the SQL query and retrieve the package metadata
-	// rows, err := db.Query(query.String())
-	// if err != nil {
-	// 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to query packages from database"})
-	// 		return
-	// }
-	// defer rows.Close()
 
-	// packages := make([]models.PackageMetadata, 0)
-	// for rows.Next() {
-	// 		var packageMetadata models.PackageMetadata
-	// 		err := rows.Scan(&packageMetadata.ID, &packageMetadata.Name, &packageMetadata.Version)
-	// 		if err != nil {
-	// 				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to scan package metadata"})
-	// 				return
-	// 		}
-	// 		packages = append(packages, packageMetadata)
-	// }
 
-	// // Set the offset header in the response
-	// nextOffset := offset + len(packages)
-	// c.Header("offset", strconv.Itoa(nextOffset))
+		offset := c.Query("offset")
+		if offset == "" {
+				offset = "0"
+		}
+		offsetInt, err := strconv.Atoi(offset)
+		if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid 'offset' parameter"})
+				return
+		}
 
-	// // Return the package metadata as a JSON array
-	// c.JSON(http.StatusOK, packages)
+		limit := 100
+    packages, err := getPackages(c, queryStrings, offsetInt, limit+1)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    if len(packages) > limit {
+        c.Header("offset", strconv.Itoa(offsetInt+limit))
+        packages = packages[:limit]
+    } else {
+        c.Header("offset", "0")
+    }
+
+    c.JSON(http.StatusOK, packages)
 }
+
+
+func getPackages(c *gin.Context, queryStrings []string, offset, limit int) ([]models.PackageMetadata, error) {
+	db, ok := getDB(c)
+	if !ok {
+		return nil, nil
+	}
+
+
+	var whereClause string
+	if len(queryStrings) > 0 {
+			whereClause = "WHERE " + strings.Join(queryStrings, " AND ")
+	}
+
+	rows, err := db.Query("SELECT Name, Version, PackageID FROM packagemetadata "+whereClause+" LIMIT ? OFFSET ?", limit+1, offset)
+	if err != nil {
+			return nil, err
+	}
+	defer rows.Close()
+
+	packages := make([]models.PackageMetadata, 0, limit)
+	for rows.Next() {
+			var pkg models.PackageMetadata
+			err := rows.Scan(&pkg.Name, &pkg.Version, &pkg.ID)
+			if err != nil {
+					return nil, err
+			}
+			packages = append(packages, pkg)
+	}
+	if err := rows.Err(); err != nil {
+			return nil, err
+	}
+
+	return packages, nil
+}
+
+
 
 // PackageByRegExGet - Get any packages fitting the regular expression.
 func PackageByRegExGet(c *gin.Context) {
