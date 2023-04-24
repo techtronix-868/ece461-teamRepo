@@ -18,14 +18,13 @@ import (
 	"os"
 	"time"
 
-	"github.com/mabaums/ece461-web/backend/datastore"
 	"github.com/mabaums/ece461-web/backend/models"
 
 	"github.com/gin-gonic/gin"
 )
 
 var db *sql.DB
-var ds datastore.InMemoryDatstore
+var ds InMemoryDatstore
 
 func initDB() error {
 	var err error
