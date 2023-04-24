@@ -69,6 +69,8 @@ func connectTCPSocket() (*sql.DB, error) {
 		dbTCPHost = os.Getenv("INSTANCE_HOST") // e.g. '127.0.0.1' ('172.17.0.1' if deployed to GAE Flex)
 	)
 
+	log.Infof("DB_USER: %v\n DB_NAME: %v\nDB_PORT: %v\nINSTANCE_HOST: %v\n", dbUser, dbName, dbPort, dbTCPHost)
+
 	dbURI := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true",
 		dbUser, dbPwd, dbTCPHost, dbPort, dbName)
 
