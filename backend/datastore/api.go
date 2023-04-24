@@ -309,7 +309,7 @@ func PackageCreate(c *gin.Context) {
 		User: User_temp,
 		Date: time.Now(),
 		PackageMetadata: metadata,
-		Action: "Create",
+		Action: "CREATE",
 	}
 	var user_table_id int
 	err = db.QueryRow("SELECT user.id FROM User WHERE user.name= ?", User_temp.Name).Scan(&user_table_id)
@@ -397,7 +397,7 @@ func PackageUpdate(c *gin.Context) {
 		User: User_temp,
 		Date: time.Now(),
 		PackageMetadata: metadata,
-		Action: "Update",
+		Action: "UPDATE",
 	}
 	var user_table_id int
 	err = db.QueryRow("SELECT user.id FROM User WHERE user.name= ?", User_temp.Name).Scan(&user_table_id)
@@ -707,13 +707,14 @@ func PackageByNameGet(c *gin.Context) {
 	name := strings.TrimLeft(c.Param("name"), "/")
 
 	// Query for all packages with matching name
-	rows, err := db.Query("SELECT pmd.Name, pmd.Version, pmd.PackageID, phe.user, phe.date, phe.action " +
+	rows, err := db.Query("SELECT pmd.Name, pmd.Version, pmd.PackageID, phe.user_id, phe.date, phe.action " +
 		"FROM Package p " +
 		"JOIN PackageMetadata pmd ON p.metadata_id = pmd.id " +
 		"JOIN PackageHistoryEntry phe ON p.metadata_id = phe.package_metadata_id " +
 		"WHERE pmd.Name = ?", name)
-
-	if rows == nil || err != nil {
+	
+	fmt.Print(rows)
+	if !rows.Next() || err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"description": "No such package."})
 		return
 	}
@@ -724,14 +725,15 @@ func PackageByNameGet(c *gin.Context) {
 	for rows.Next() {
 		var packageHistoryEntry models.PackageHistoryEntry
 		var packageMetadata models.PackageMetadata
-
+		var user_id int
 		err := rows.Scan(&packageMetadata.Name, &packageMetadata.Version, &packageMetadata.ID,
-			&packageHistoryEntry.User, &packageHistoryEntry.Date, &packageHistoryEntry.Action)
+			&user_id, &packageHistoryEntry.Date, &packageHistoryEntry.Action)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 			return
 		}
-		packageMetadata.ID = "" // Set ID to "" since it's not needed
+		err = db.QueryRow("SELECT * FROM User WHERE id = ?", user_id).Scan(&packageHistoryEntry.User)
+
 		packageHistoryEntry.PackageMetadata = packageMetadata
 		packageHistoryEntries = append(packageHistoryEntries, packageHistoryEntry)
 	}
