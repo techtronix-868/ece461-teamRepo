@@ -1,4 +1,4 @@
-package datastore
+package api
 
 import (
 	log "github.com/sirupsen/logrus"
