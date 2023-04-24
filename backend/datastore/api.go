@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"fmt"
 	"strings"
-	"strconv"
+	//"strconv"
 	"math/rand"
 	"time"
 	"os"
@@ -17,7 +17,7 @@ import (
 	"github.com/mabaums/ece461-web/backend/models"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/joho/godotenv"
-	"github.com/blang/semver"
+	"github.com/Masterminds/semver/v3"
 	_ "github.com/go-sql-driver/mysql"
 
 )
@@ -777,85 +777,72 @@ func PackagesList(c *gin.Context) {
 		return
 	}
 
-	var queryStrings []string
-    for _, packageQuery := range packageQueries {
-        if packageQuery.Name == "" {
-            c.JSON(http.StatusBadRequest, gin.H{"error": "PackageQuery object must have non-empty 'Name' field"})
-            return
-        }
-        queryString := packageQuery.Name
-        if packageQuery.Version != "" {
-					semverRange, err := semver.ParseRange(packageQuery.Version)
-					if err != nil {
-							c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-							return
-					}
-					queryString += fmt.Sprintf("@%v", semverRange)
-			}
-        queryStrings = append(queryStrings, queryString)
-    }
-
-
-
-		offset := c.Query("offset")
-		if offset == "" {
-				offset = "0"
+	var nameConditions []string
+	for _, query := range packageQueries {
+		if query.Name != "" {
+			nameConditions = append(nameConditions, fmt.Sprintf("'%s'", query.Name))
 		}
-		offsetInt, err := strconv.Atoi(offset)
-		if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid 'offset' parameter"})
+	}
+	
+	var rangeConditions []string
+	for _, query := range packageQueries {
+		if query.Version == "" {
+			rangeConditions = append(rangeConditions, "0.0.0 <= Version AND Version < 9999999.999.999")
+		} else {
+			r, err := convertToBasicComparisons(query.Version)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 				return
+			}
+			rangeConditions = append(rangeConditions, r)
 		}
-
-		limit := 100
-    packages, err := getPackages(c, queryStrings, offsetInt, limit+1)
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
-    if len(packages) > limit {
-        c.Header("offset", strconv.Itoa(offsetInt+limit))
-        packages = packages[:limit]
-    } else {
-        c.Header("offset", "0")
-    }
-
-    c.JSON(http.StatusOK, packages)
-}
-
-func getPackages(c *gin.Context, queryStrings []string, offset, limit int) ([]models.PackageMetadata, error) {
-	db, ok := getDB(c)
-	if !ok {
-		return nil, nil
 	}
+	queryStr := fmt.Sprintf("SELECT * FROM PackageMetadata WHERE Name = %s AND Version REGEXP '^[^.]+\\.[^.]+\\.[^.]+$' AND  %s;", strings.Join(nameConditions, ","), strings.Join(rangeConditions, " AND "))
+	// fmt.Print(queryStr)
 
-
-	var whereClause string
-	if len(queryStrings) > 0 {
-			whereClause = "WHERE " + strings.Join(queryStrings, " AND ")
-	}
-
-	rows, err := db.Query("SELECT Name, Version, PackageID FROM packagemetadata "+whereClause+" LIMIT ? OFFSET ?", limit+1, offset)
+	rows, err := db.Query(queryStr)
 	if err != nil {
-			return nil, err
+		panic(err)
 	}
 	defer rows.Close()
 
-	packages := make([]models.PackageMetadata, 0, limit)
+	var packages []models.PackageMetadata
 	for rows.Next() {
-			var pkg models.PackageMetadata
-			err := rows.Scan(&pkg.Name, &pkg.Version, &pkg.ID)
-			if err != nil {
-					return nil, err
-			}
-			packages = append(packages, pkg)
-	}
-	if err := rows.Err(); err != nil {
-			return nil, err
+		var p models.PackageMetadata
+		if err := rows.Scan(&p.ID, &p.Name, &p.Version, &p.ID); err != nil {
+			panic(err)
+		}
+		packages = append(packages, p)
 	}
 
-	return packages, nil
+	c.JSON(http.StatusOK, packages)
+
 }
+func convertToBasicComparisons(v string) (string, error) {
+	if strings.HasPrefix(v, "^") {
+			vParsed := semver.MustParse(v[1:])
+			vMin := fmt.Sprintf(">= '%d.%d' ", vParsed.Major(), vParsed.Minor())
+			vMax := fmt.Sprintf("< '%d.%d' ", vParsed.Major()+1, 0)
+			return fmt.Sprintf("Version %s AND Version %s", vMin, vMax), nil
+	} else if strings.HasPrefix(v, "~") {
+			vParsed := semver.MustParse(v[1:])
+			vMin := fmt.Sprintf(">= '%d.%d'", vParsed.Major(), vParsed.Minor())
+			vMax := fmt.Sprintf("< '%d.%d'", vParsed.Major(), vParsed.Minor()+1)
+			return fmt.Sprintf("Version %s AND Version %s", vMin, vMax), nil
+	} else if strings.Contains(v, "-") {
+			bounds := strings.Split(v, "-")
+			if len(bounds) != 2 {
+					return "", fmt.Errorf("invalid bounded range: %s", v)
+			}
+			bounds[0] = strings.TrimSuffix(bounds[0], ".")
+			return fmt.Sprintf("Version >= '%s' AND Version < '%s'", bounds[0], bounds[1]), nil
+	} else {
+			return fmt.Sprintf("Version = '%s'", v), nil
+	}
+}
+
+
+
 
 // PackageByRegExGet - Get any packages fitting the regular expression.
 func PackageByRegExGet(c *gin.Context) {
