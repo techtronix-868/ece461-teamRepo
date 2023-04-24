@@ -62,20 +62,24 @@ func connectTCPSocket() (*sql.DB, error) {
 	// Cloud Secret Manager (https://cloud.google.com/secret-manager) to help
 	// keep secrets safe.
 	var (
-		dbUser         = os.Getenv("DB_USER")              // e.g. 'my-db-user'
-		dbPwd          = os.Getenv("DB_PASS")              // e.g. 'my-db-password'
-		dbName         = os.Getenv("DB_NAME")              // e.g. 'my-database'
-		dbPort         = os.Getenv("DB_PORT")              // e.g. '3306'
-		unixSocketPath = os.Getenv("INSTANCE_UNIX_SOCKET") // e.g. '127.0.0.1' ('172.17.0.1' if deployed to GAE Flex)
+		dbUser         = os.Getenv("DB_USER") // e.g. 'my-db-user'
+		dbPwd          = os.Getenv("DB_PASS") // e.g. 'my-db-password'
+		dbName         = os.Getenv("DB_NAME") // e.g. 'my-database'
+		dbPort         = os.Getenv("DB_PORT") // e.g. '3306'
+		unixSocketPath = os.Getenv("INSTANCE_UNIX_SOCKET")
+		dbTCPHost      = os.Getenv("INSTANCE_HOST") // e.g. '127.0.0.1' ('172.17.0.1' if deployed to GAE Flex)
 	)
 
 	log.Infof("DB_USER: %v\n DB_NAME: %v\nDB_PORT: %v\nINSTANCE_HOST: %v\n", dbUser, dbName, dbPort, unixSocketPath)
 
-	dbURI := fmt.Sprintf("%s:%s@unix(%s)/%s?parseTime=true",
-		dbUser, dbPwd, unixSocketPath, dbName)
-	/*
-		dbURI := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true",
-			dbUser, dbPwd, dbTCPHost, dbPort, dbName)*/
+	dbURI := ""
+	if len(unixSocketPath) > 0 {
+		dbURI = fmt.Sprintf("%s:%s@unix(%s)/%s?parseTime=true",
+			dbUser, dbPwd, unixSocketPath, dbName)
+	} else {
+		dbURI = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true",
+			dbUser, dbPwd, dbTCPHost, dbPort, dbName)
+	}
 
 	// dbPool is the pool of database connections.
 	dbPool, err := sql.Open("mysql", dbURI)
