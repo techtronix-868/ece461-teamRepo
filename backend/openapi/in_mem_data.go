@@ -1,4 +1,4 @@
-package api
+package openapi
 
 import (
 	log "github.com/sirupsen/logrus"
