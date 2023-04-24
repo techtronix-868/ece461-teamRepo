@@ -5,35 +5,33 @@ import (
 	"database/sql"
 	//"encoding/json"
 	// "errors"
-	"log"
-	"net/http"
 	"fmt"
-	"strings"
-	"strconv"
+	"log"
 	"math/rand"
-	"time"
+	"net/http"
 	"os"
-	"github.com/gin-gonic/gin"
-	"github.com/mabaums/ece461-web/backend/models"
-	"github.com/dgrijalva/jwt-go"
-	"github.com/joho/godotenv"
-	"github.com/Masterminds/semver/v3"
-	_ "github.com/go-sql-driver/mysql"
+	"strconv"
+	"strings"
+	"time"
 
+	"github.com/Masterminds/semver/v3"
+	"github.com/dgrijalva/jwt-go"
+	"github.com/gin-gonic/gin"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/joho/godotenv"
+	"github.com/mabaums/ece461-web/backend/models"
 )
 
 type AuthenticationToken string
 
 type UserCredentials struct {
-	Name string `json:"username"`
-	IsAdmin bool `json:"isAdmin"`
+	Name     string `json:"username"`
+	IsAdmin  bool   `json:"isAdmin"`
 	Password string `json:"password"`
 }
 type PackageRegEx struct {
 	RegEx string `json:"regex"`
 }
-
-
 
 /*  HELPER FUNCTIONS */
 func getDB(c *gin.Context) (*sql.DB, bool) {
@@ -50,7 +48,6 @@ func getDB(c *gin.Context) (*sql.DB, bool) {
 	return db, true
 }
 
-
 func ExtractUserInfoFromToken(tokenString string) (string, string, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		// Verify that the signing method is HMAC and the secret matches
@@ -59,14 +56,14 @@ func ExtractUserInfoFromToken(tokenString string) (string, string, error) {
 		}
 		err := godotenv.Load()
 		if err != nil {
-			log.Fatal("Error loading .env file")
+			log.Print("Error loading .env file")
 		}
 
-		secret_key := os.Getenv("SECRET_KEY")   
+		secret_key := os.Getenv("SECRET_KEY")
 		return []byte(secret_key), nil
 	})
 	if err != nil {
-		return "",  "", err
+		return "", "", err
 	}
 
 	// Extract the "user_name" claim from the token
@@ -74,7 +71,7 @@ func ExtractUserInfoFromToken(tokenString string) (string, string, error) {
 		username, ok1 := claims["username"].(string)
 		password, ok2 := claims["password"].(string)
 		if !ok1 || !ok2 {
-				return "", "", fmt.Errorf("invalid claims")
+			return "", "", fmt.Errorf("invalid claims")
 		}
 		return username, password, nil
 	}
@@ -105,7 +102,7 @@ func CreateUser(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	result, err = db.Exec("INSERT INTO UserAuthenticationInfo (user_id, password) VALUES (?, ?)", userID, info.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -113,7 +110,6 @@ func CreateUser(c *gin.Context) {
 	}
 	c.JSON(http.StatusCreated, gin.H{"Message": "created user"})
 }
-
 
 func CreateAuthToken(c *gin.Context) {
 	db, ok := getDB(c)
@@ -140,9 +136,8 @@ func CreateAuthToken(c *gin.Context) {
 		return
 	}
 
-
 	// Verify password
-	if (dbAuthInfo.Password != authReq.Secret.Password) {
+	if dbAuthInfo.Password != authReq.Secret.Password {
 		c.JSON(http.StatusUnauthorized, gin.H{"Message": "unauth"})
 	}
 	// Verify password
@@ -163,9 +158,9 @@ func CreateAuthToken(c *gin.Context) {
 	// Sign the token with a secret key
 	err = godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Print("Error loading .env file")
 	}
-	secret_key := os.Getenv("SECRET_KEY")  
+	secret_key := os.Getenv("SECRET_KEY")
 	secret := []byte(secret_key)
 	tokenString, err := token.SignedString(secret)
 	if err != nil {
@@ -173,7 +168,6 @@ func CreateAuthToken(c *gin.Context) {
 	}
 	c.String(http.StatusOK, "Bearer "+tokenString)
 }
-
 
 func PackageCreate(c *gin.Context) {
 	// Get Database
@@ -188,30 +182,30 @@ func PackageCreate(c *gin.Context) {
 		return
 	}
 	username, password, err := ExtractUserInfoFromToken(authTokenHeader)
-	var pass string 
+	var pass string
 	err = db.QueryRow("SELECT password FROM UserAuthenticationInfo WHERE user_id = (SELECT id FROM User WHERE name = ?)", username).Scan(&pass)
 	if err != nil || pass != password {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" + 
-		"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid." })
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" +
+			"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid."})
 		return
 	}
 
 	// Process Request
 	var pkg models.Package
 	if err := c.ShouldBindJSON(&pkg); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" + 
-		"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid." })
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" +
+			"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid."})
 		return
 	}
 	data := pkg.Data
 	metadata := pkg.Metadata
 
-  // Verify that only one of Content and URl are set
+	// Verify that only one of Content and URl are set
 	dataURLEmpty := len(data.URL) == 0
 	dataContentEmpty := len(data.Content) == 0
-	if (!((dataURLEmpty && !dataContentEmpty) || (!dataURLEmpty && dataContentEmpty))) { // XOR
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" + 
-		"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid." })
+	if !((dataURLEmpty && !dataContentEmpty) || (!dataURLEmpty && dataContentEmpty)) { // XOR
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" +
+			"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid."})
 		return
 	}
 
@@ -220,13 +214,12 @@ func PackageCreate(c *gin.Context) {
 	err = db.QueryRow("SELECT * FROM PackageMetadata WHERE Name = ? AND Version = ?", metadata.Name, metadata.Version).Scan(&exists)
 	if err != sql.ErrNoRows {
 		// row does not exist, return an error response
-		c.AbortWithStatusJSON(http.StatusConflict, gin.H{"description": "Package exists already" })
+		c.AbortWithStatusJSON(http.StatusConflict, gin.H{"description": "Package exists already"})
 		return
-  }
+	}
 
 	// Check Rating
-	
-	
+
 	// PackageMetadata
 	paramID := strings.TrimLeft(c.Param("id"), "/")
 
@@ -262,7 +255,7 @@ func PackageCreate(c *gin.Context) {
 	// Insert PackageMetadata
 	result, err := db.Exec("INSERT INTO PackageMetadata (Name, Version, PackageID) VALUES (?, ?, ?)", metadata.Name, metadata.Version, paramID)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusConflict, gin.H{"description": "Package exists already." })
+		c.AbortWithStatusJSON(http.StatusConflict, gin.H{"description": "Package exists already."})
 		return
 	}
 
@@ -274,7 +267,7 @@ func PackageCreate(c *gin.Context) {
 
 	// Insert PackageData
 	var dataID int64
-	if (dataURLEmpty) {
+	if dataURLEmpty {
 		result, err := db.Exec("INSERT INTO PackageData (Content, JSProgram) VALUES (?, ?)", data.Content, data.JSProgram)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error1"})
@@ -285,7 +278,7 @@ func PackageCreate(c *gin.Context) {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error2"})
 			return
 		}
-	} else if (dataContentEmpty) {
+	} else if dataContentEmpty {
 		result, err := db.Exec("INSERT INTO PackageData (URL, JSProgram) VALUES (?, ?)", data.URL, data.JSProgram)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error3"})
@@ -297,7 +290,7 @@ func PackageCreate(c *gin.Context) {
 			return
 		}
 	}
-		
+
 	// Insert Package
 	result, err = db.Exec("INSERT INTO Package (metadata_id, data_id) VALUES (?, ?)", metadataID, dataID)
 	if err != nil {
@@ -310,10 +303,10 @@ func PackageCreate(c *gin.Context) {
 	User_temp.Name = username
 	User_temp.IsAdmin = false
 	packageHistoryEntry := models.PackageHistoryEntry{
-		User: User_temp,
-		Date: time.Now(),
+		User:            User_temp,
+		Date:            time.Now(),
 		PackageMetadata: metadata,
-		Action: "CREATE",
+		Action:          "CREATE",
 	}
 	var user_table_id int
 	err = db.QueryRow("SELECT user.id FROM User WHERE user.name= ?", User_temp.Name).Scan(&user_table_id)
@@ -323,14 +316,14 @@ func PackageCreate(c *gin.Context) {
 	}
 	result, err = db.Exec("INSERT INTO PackageHistoryEntry (user_id, date, package_metadata_id, action) VALUES (?, ?, ?, ?)", user_table_id, packageHistoryEntry.Date, metadataID, packageHistoryEntry.Action)
 	if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	// Successful Response
 	c.JSON(http.StatusCreated, gin.H{
 		"metadata": metadata,
-		"data": data,
+		"data":     data,
 	})
 }
 
@@ -349,11 +342,11 @@ func PackageUpdate(c *gin.Context) {
 		return
 	}
 	username, password, err := ExtractUserInfoFromToken(authTokenHeader)
-	var pass string 
+	var pass string
 	err = db.QueryRow("SELECT password FROM UserAuthenticationInfo WHERE user_id = (SELECT id FROM User WHERE name = ?)", username).Scan(&pass)
 	if err != nil || pass != password {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" + 
-		"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid." })
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" +
+			"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid."})
 		return
 	}
 
@@ -363,21 +356,20 @@ func PackageUpdate(c *gin.Context) {
 		return
 	}
 
-
 	metadata := pkg.Metadata
 	var existingPackage models.Package
-	var package_data_id int;
-	var package_metadata_id int;
+	var package_data_id int
+	var package_metadata_id int
 
 	err = db.QueryRow("SELECT p.data_id, pmd.id, pmd.Name, pmd.Version, pmd.PackageID "+
-			"FROM Package p "+
-			"JOIN PackageMetadata pmd ON p.metadata_id = pmd.id "+
-			"WHERE pmd.Name = ? AND pmd.Version = ? AND pmd.PackageID = ?",
-			metadata.Name, metadata.Version, metadata.ID).Scan(
-			&package_data_id, &package_metadata_id, &existingPackage.Metadata.Name, &existingPackage.Metadata.Version, &existingPackage.Metadata.ID,
+		"FROM Package p "+
+		"JOIN PackageMetadata pmd ON p.metadata_id = pmd.id "+
+		"WHERE pmd.Name = ? AND pmd.Version = ? AND pmd.PackageID = ?",
+		metadata.Name, metadata.Version, metadata.ID).Scan(
+		&package_data_id, &package_metadata_id, &existingPackage.Metadata.Name, &existingPackage.Metadata.Version, &existingPackage.Metadata.ID,
 	)
 	if err == sql.ErrNoRows {
-		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"description": "Package does not exist" })
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"description": "Package does not exist"})
 		return
 	} else if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
@@ -398,10 +390,10 @@ func PackageUpdate(c *gin.Context) {
 	User_temp.Name = username
 	User_temp.IsAdmin = false
 	packageHistoryEntry := models.PackageHistoryEntry{
-		User: User_temp,
-		Date: time.Now(),
+		User:            User_temp,
+		Date:            time.Now(),
 		PackageMetadata: metadata,
-		Action: "UPDATE",
+		Action:          "UPDATE",
 	}
 	var user_table_id int
 	err = db.QueryRow("SELECT user.id FROM User WHERE user.name= ?", User_temp.Name).Scan(&user_table_id)
@@ -411,12 +403,12 @@ func PackageUpdate(c *gin.Context) {
 	}
 	_, err = db.Exec("INSERT INTO PackageHistoryEntry (user_id, date, package_metadata_id, action) VALUES (?, ?, ?, ?)", user_table_id, packageHistoryEntry.Date, package_metadata_id, packageHistoryEntry.Action)
 	if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"description": "Version is updated"})
-}	
+}
 
 // PackageDelete - Delete this version of the package. given packageid
 func PackageDelete(c *gin.Context) {
@@ -432,11 +424,11 @@ func PackageDelete(c *gin.Context) {
 		return
 	}
 	username, password, err := ExtractUserInfoFromToken(authTokenHeader)
-	var pass string 
+	var pass string
 	err = db.QueryRow("SELECT password FROM UserAuthenticationInfo WHERE user_id = (SELECT id FROM User WHERE name = ?)", username).Scan(&pass)
 	if err != nil || pass != password {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" + 
-		"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid." })
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" +
+			"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid."})
 		return
 	}
 
@@ -480,22 +472,21 @@ func PackageByNameDelete(c *gin.Context) {
 		return
 	}
 	username, password, err := ExtractUserInfoFromToken(authTokenHeader)
-	var pass string 
+	var pass string
 	err = db.QueryRow("SELECT password FROM UserAuthenticationInfo WHERE user_id = (SELECT id FROM User WHERE name = ?)", username).Scan(&pass)
 	if err != nil || pass != password {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" + 
-		"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid." })
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" +
+			"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid."})
 		return
 	}
-
 
 	packageName := strings.TrimLeft(c.Param("name"), "/")
 	// Get the metadata IDs of all packages with the given name
 	var metadataIDs []int
 	rows, err := db.Query("SELECT id FROM PackageMetadata WHERE Name = ?", packageName)
 	if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
-			return
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -517,9 +508,9 @@ func PackageByNameDelete(c *gin.Context) {
 		}
 
 		_, err = db.Exec("DELETE  pmd, pd, p FROM Package p "+
-		"LEFT JOIN PackageMetaData pmd ON p.metadata_id = pmd.id "+
-		"LEFT JOIN PackageData pd ON p.data_id = pd.id "+
-		"WHERE p.metadata_id = ?", metadataID)
+			"LEFT JOIN PackageMetaData pmd ON p.metadata_id = pmd.id "+
+			"LEFT JOIN PackageData pd ON p.data_id = pd.id "+
+			"WHERE p.metadata_id = ?", metadataID)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 			return
@@ -530,7 +521,7 @@ func PackageByNameDelete(c *gin.Context) {
 }
 
 // PackageRetrieve - Interact with the package with this ID
-	// historyentry
+// historyentry
 func PackageRetrieve(c *gin.Context) {
 	db, ok := getDB(c)
 	if !ok {
@@ -544,43 +535,41 @@ func PackageRetrieve(c *gin.Context) {
 		return
 	}
 	username, password, err := ExtractUserInfoFromToken(authTokenHeader)
-	var pass string 
+	var pass string
 	err = db.QueryRow("SELECT password FROM UserAuthenticationInfo WHERE user_id = (SELECT id FROM User WHERE name = ?)", username).Scan(&pass)
 	if err != nil || pass != password {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" + 
-		"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid." })
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" +
+			"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid."})
 		return
 	}
 
-	
 	packageID := strings.TrimLeft(c.Param("id"), "/")
 
 	var packageContent, packageURL, packageJSProgram sql.NullString
 	var packageName, packageVersion, packageContentS, packageURLS, packageJSProgramS string
 	var package_data_id int
 
-
-	err = db.QueryRow("SELECT p.data_id, m.Name, m.Version "+ 
-	"FROM Package p "+ 
-	"JOIN PackageMetadata m ON p.metadata_id = m.id "+ 
-	"WHERE m.PackageID = ?", packageID).Scan(&package_data_id, &packageName, &packageVersion)
+	err = db.QueryRow("SELECT p.data_id, m.Name, m.Version "+
+		"FROM Package p "+
+		"JOIN PackageMetadata m ON p.metadata_id = m.id "+
+		"WHERE m.PackageID = ?", packageID).Scan(&package_data_id, &packageName, &packageVersion)
 	if err == sql.ErrNoRows {
-		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"description":"Package does not exist."})
-		return	
-	}  else if err != nil {
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"description": "Package does not exist."})
+		return
+	} else if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
-		return	
+		return
 	}
 	fmt.Print(package_data_id)
 
 	err = db.QueryRow("SELECT Content, URL, JSProgram FROM PackageData WHERE id = ?", package_data_id).Scan(&packageContent, &packageURL, &packageJSProgram)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"description":"Package does not exist."})
-			return	
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"description": "Package does not exist."})
+			return
 		} else {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error1": err})
-			return	
+			return
 		}
 	}
 	if packageContent.Valid {
@@ -596,25 +585,24 @@ func PackageRetrieve(c *gin.Context) {
 	if packageJSProgram.Valid {
 		packageJSProgramS = packageJSProgram.String
 	} else {
-		packageJSProgramS= ""
+		packageJSProgramS = ""
 	}
 	// do something with retrieved data
-	
 
-	metadata := models.PackageMetadata {
-		ID: packageID,
-		Name: packageName,
+	metadata := models.PackageMetadata{
+		ID:      packageID,
+		Name:    packageName,
 		Version: packageVersion,
 	}
-	data := models.PackageData {
-		Content: packageContentS,
-		URL: packageURLS,
+	data := models.PackageData{
+		Content:   packageContentS,
+		URL:       packageURLS,
 		JSProgram: packageJSProgramS,
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"metadata": metadata,
-		"data": data,
+		"data":     data,
 	})
 }
 
@@ -632,23 +620,23 @@ func RegistryReset(c *gin.Context) {
 		return
 	}
 	username, password, err := ExtractUserInfoFromToken(authTokenHeader)
-	var pass string 
+	var pass string
 	err = db.QueryRow("SELECT password FROM UserAuthenticationInfo WHERE user_id = (SELECT id FROM User WHERE name = ?)", username).Scan(&pass)
 	if err != nil || pass != password {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" + 
-		"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid." })
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" +
+			"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid."})
 		return
 	}
 
-	// verify admin status	
-	var isAdmin bool 
+	// verify admin status
+	var isAdmin bool
 
 	err = db.QueryRow("SELECT isAdmin FROM User WHERE name = ?", username).Scan(&isAdmin)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
 	}
-	if (!isAdmin) {
+	if !isAdmin {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"description": "You do not have permission to reset the registry"})
 		return
 	}
@@ -684,7 +672,7 @@ func RegistryReset(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"description": "Registry is reset"})
 }
 
-// PacakgeByNameGet - 
+// PacakgeByNameGet -
 func PackageByNameGet(c *gin.Context) {
 	// Return the history of this package (all versions).
 	db, ok := getDB(c)
@@ -699,11 +687,11 @@ func PackageByNameGet(c *gin.Context) {
 		return
 	}
 	username, password, err := ExtractUserInfoFromToken(authTokenHeader)
-	var pass string 
+	var pass string
 	err = db.QueryRow("SELECT password FROM UserAuthenticationInfo WHERE user_id = (SELECT id FROM User WHERE name = ?)", username).Scan(&pass)
 	if err != nil || pass != password {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" + 
-		"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid." })
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" +
+			"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid."})
 		return
 	}
 
@@ -711,12 +699,12 @@ func PackageByNameGet(c *gin.Context) {
 	name := strings.TrimLeft(c.Param("name"), "/")
 
 	// Query for all packages with matching name
-	rows, err := db.Query("SELECT pmd.Name, pmd.Version, pmd.PackageID, phe.user_id, phe.date, phe.action " +
-		"FROM Package p " +
-		"JOIN PackageMetadata pmd ON p.metadata_id = pmd.id " +
-		"JOIN PackageHistoryEntry phe ON p.metadata_id = phe.package_metadata_id " +
+	rows, err := db.Query("SELECT pmd.Name, pmd.Version, pmd.PackageID, phe.user_id, phe.date, phe.action "+
+		"FROM Package p "+
+		"JOIN PackageMetadata pmd ON p.metadata_id = pmd.id "+
+		"JOIN PackageHistoryEntry phe ON p.metadata_id = phe.package_metadata_id "+
 		"WHERE pmd.Name = ?", name)
-	
+
 	fmt.Print(rows)
 	if !rows.Next() || err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"description": "No such package."})
@@ -751,7 +739,6 @@ func PackageByNameGet(c *gin.Context) {
 	c.JSON(http.StatusOK, packageHistoryEntries)
 }
 
-
 func PackagesList(c *gin.Context) {
 	db, ok := getDB(c)
 	if !ok {
@@ -765,11 +752,11 @@ func PackagesList(c *gin.Context) {
 		return
 	}
 	username, password, err := ExtractUserInfoFromToken(authTokenHeader)
-	var pass string 
+	var pass string
 	err = db.QueryRow("SELECT password FROM UserAuthenticationInfo WHERE user_id = (SELECT id FROM User WHERE name = ?)", username).Scan(&pass)
 	if err != nil || pass != password {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" + 
-		"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid." })
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" +
+			"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid."})
 		return
 	}
 
@@ -799,7 +786,7 @@ func PackagesList(c *gin.Context) {
 			nameConditions = append(nameConditions, fmt.Sprintf("'%s'", query.Name))
 		}
 	}
-	
+
 	var rangeConditions []string
 	for _, query := range packageQueries {
 		if query.Version == "" {
@@ -813,7 +800,7 @@ func PackagesList(c *gin.Context) {
 			rangeConditions = append(rangeConditions, r)
 		}
 	}
-	queryStr := fmt.Sprintf("SELECT * FROM PackageMetadata WHERE Name = %s AND Version REGEXP '^[^.]+\\.[^.]+\\.[^.]+$' AND  %s LIMIT %d OFFSET %d;" , strings.Join(nameConditions, ","), strings.Join(rangeConditions, " AND "), limit, offset)
+	queryStr := fmt.Sprintf("SELECT * FROM PackageMetadata WHERE Name = %s AND Version REGEXP '^[^.]+\\.[^.]+\\.[^.]+$' AND  %s LIMIT %d OFFSET %d;", strings.Join(nameConditions, ","), strings.Join(rangeConditions, " AND "), limit, offset)
 	// fmt.Print(queryStr)
 
 	rows, err := db.Query(queryStr)
@@ -832,10 +819,9 @@ func PackagesList(c *gin.Context) {
 	}
 
 	if len(packages) >= limit {
-		c.AbortWithStatusJSON(413, gin.H{"description":"Too many packages returned."})
+		c.AbortWithStatusJSON(413, gin.H{"description": "Too many packages returned."})
 		return
 	}
-
 
 	c.JSON(http.StatusOK, packages)
 }
@@ -843,27 +829,26 @@ func PackagesList(c *gin.Context) {
 // UTILITY FOR PACKAGESLIST
 func convertToBasicComparisons(v string) (string, error) {
 	if strings.HasPrefix(v, "^") {
-			vParsed := semver.MustParse(v[1:])
-			vMin := fmt.Sprintf(">= '%d.%d' ", vParsed.Major(), vParsed.Minor())
-			vMax := fmt.Sprintf("< '%d.%d' ", vParsed.Major()+1, 0)
-			return fmt.Sprintf("Version %s AND Version %s", vMin, vMax), nil
+		vParsed := semver.MustParse(v[1:])
+		vMin := fmt.Sprintf(">= '%d.%d' ", vParsed.Major(), vParsed.Minor())
+		vMax := fmt.Sprintf("< '%d.%d' ", vParsed.Major()+1, 0)
+		return fmt.Sprintf("Version %s AND Version %s", vMin, vMax), nil
 	} else if strings.HasPrefix(v, "~") {
-			vParsed := semver.MustParse(v[1:])
-			vMin := fmt.Sprintf(">= '%d.%d'", vParsed.Major(), vParsed.Minor())
-			vMax := fmt.Sprintf("< '%d.%d'", vParsed.Major(), vParsed.Minor()+1)
-			return fmt.Sprintf("Version %s AND Version %s", vMin, vMax), nil
+		vParsed := semver.MustParse(v[1:])
+		vMin := fmt.Sprintf(">= '%d.%d'", vParsed.Major(), vParsed.Minor())
+		vMax := fmt.Sprintf("< '%d.%d'", vParsed.Major(), vParsed.Minor()+1)
+		return fmt.Sprintf("Version %s AND Version %s", vMin, vMax), nil
 	} else if strings.Contains(v, "-") {
-			bounds := strings.Split(v, "-")
-			if len(bounds) != 2 {
-					return "", fmt.Errorf("invalid bounded range: %s", v)
-			}
-			bounds[0] = strings.TrimSuffix(bounds[0], ".")
-			return fmt.Sprintf("Version >= '%s' AND Version < '%s'", bounds[0], bounds[1]), nil
+		bounds := strings.Split(v, "-")
+		if len(bounds) != 2 {
+			return "", fmt.Errorf("invalid bounded range: %s", v)
+		}
+		bounds[0] = strings.TrimSuffix(bounds[0], ".")
+		return fmt.Sprintf("Version >= '%s' AND Version < '%s'", bounds[0], bounds[1]), nil
 	} else {
-			return fmt.Sprintf("Version = '%s'", v), nil
+		return fmt.Sprintf("Version = '%s'", v), nil
 	}
 }
-
 
 // PackageByRegExGet - Get any packages fitting the regular expression.
 func PackageByRegExGet(c *gin.Context) {
@@ -880,11 +865,11 @@ func PackageByRegExGet(c *gin.Context) {
 		return
 	}
 	username, password, err := ExtractUserInfoFromToken(authTokenHeader)
-	var pass string 
+	var pass string
 	err = db.QueryRow("SELECT password FROM UserAuthenticationInfo WHERE user_id = (SELECT id FROM User WHERE name = ?)", username).Scan(&pass)
 	if err != nil || pass != password {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" + 
-		"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid." })
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" +
+			"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid."})
 		return
 	}
 
@@ -892,35 +877,35 @@ func PackageByRegExGet(c *gin.Context) {
 	var query PackageRegEx
 	err = c.ShouldBindJSON(&query)
 	if err != nil {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-			return
-	}	
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
 
 	var packages []models.PackageMetadata
 	fmt.Print(query)
 	rows, err := db.Query("SELECT version, name, id FROM packagemetadata WHERE name REGEXP ?", query.RegEx)
 	if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
-			return
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
 	}
 	defer rows.Close()
 	for rows.Next() {
-			var pkg models.PackageMetadata
-			err := rows.Scan(&pkg.Version, &pkg.Name, &pkg.ID)
-			if err != nil {
-					c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
-					return
-			}
-			packages = append(packages, pkg)
-	}
-	if err := rows.Err(); err != nil {
+		var pkg models.PackageMetadata
+		err := rows.Scan(&pkg.Version, &pkg.Name, &pkg.ID)
+		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
 			return
+		}
+		packages = append(packages, pkg)
 	}
-	
+	if err := rows.Err(); err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+
 	// Return the packages as a JSON array
 	if len(packages) == 0 {
-		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"description":"No package found under this regex."})
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"description": "No package found under this regex."})
 		return
 	}
 	c.JSON(http.StatusOK, packages)
@@ -928,8 +913,8 @@ func PackageByRegExGet(c *gin.Context) {
 }
 
 // PackageRate -
-	// historyentry
+// historyentry
 func PackageRate(c *gin.Context) {
-	// var rating Rating	
+	// var rating Rating
 	// c.JSON(http.StatusOK, ratings)
 }

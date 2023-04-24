@@ -11,14 +11,16 @@
 package main
 
 import (
-
 	"os"
-  // "log"
-  log "github.com/sirupsen/logrus"
+
+	// "log"
 	"database/sql"
-	"github.com/joho/godotenv"
 	"fmt"
-  // "net/http"
+
+	"github.com/joho/godotenv"
+	log "github.com/sirupsen/logrus"
+
+	// "net/http"
 	sw "github.com/mabaums/ece461-web/backend/datastore"
 	// WARNING!
 	// Change this to a fully-qualified import path
@@ -31,18 +33,17 @@ import (
 )
 
 func main() {
-  log.Printf("Server started")
-	db, err := connectTCPSocket();
+	log.Printf("Server started")
+	db, err := connectTCPSocket()
 	if err != nil {
-		log.Fatal("Failed to connect to database");
+		log.Fatal("Failed to connect to database")
 	}
 	defer db.Close()
-	
+
 	router := sw.NewRouter(db)
 	router.SetTrustedProxies([]string{"192.168.1.1/16"})
-  log.Fatal(router.Run(":8000"))
-  
-  
+	log.Fatal(router.Run(":8000"))
+
 	log.SetLevel(log.DebugLevel)
 	log.SetOutput(os.Stderr)
 	log.Info("Server started")
@@ -54,7 +55,7 @@ func connectTCPSocket() (*sql.DB, error) {
 
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Print("Error loading .env file")
 	}
 	// Note: Saving credentials in environment variables is convenient, but not
 	// secure - consider a more secure solution such as
