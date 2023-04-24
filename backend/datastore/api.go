@@ -529,11 +529,11 @@ func PackageRetrieve(c *gin.Context) {
 
 	var packageName, packageVersion, packageContent, packageURL, packageJSProgram string
 	fmt.Print(packageID)
-	err = db.QueryRow("SELECT m.Name, m.Version, d.Content, d.URL, d.JSProgram 
-	FROM Package p 
-	INNER JOIN PackageMetadata m ON p.metadata_id = m.id 
-	INNER JOIN PackageData d ON p.data_id = d.id 
-	WHERE m.PackageID = ?;", packageID).Scan(&packageName, &packageVersion, &packageContent, &packageURL, &packageJSProgram)
+	err = db.QueryRow("SELECT m.Name, m.Version, d.Content, d.URL, d.JSProgram " + 
+	"FROM Package p " + 
+	"INNER JOIN PackageMetadata m ON p.metadata_id = m.id " + 
+	"INNER JOIN PackageData d ON p.data_id = d.id " + 
+	"WHERE m.PackageID = ?;", packageID).Scan(&packageName, &packageVersion, &packageContent, &packageURL, &packageJSProgram)
 
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": err})
