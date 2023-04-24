@@ -3,6 +3,7 @@ package api
 // SECURITY CONCERN, AUTHENTICATION ISADMIN FIELD CAN BE SET BY USER
 import (
 	"database/sql"
+
 	//"encoding/json"
 	// "errors"
 	"fmt"
@@ -12,12 +13,11 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/Masterminds/semver/v3"
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/mabaums/ece461-web/backend/models"
+	log "github.com/sirupsen/logrus"
 )
 
 type PackageRegEx struct {
@@ -49,17 +49,21 @@ func PackageCreate(c *gin.Context) {
 	if !authenticate(c) {
 		return
 	}
-
-	log.Infof("Creating Package %v", c.Request.Body)
+	/*v, _ := ioutil.ReadAll(c.Request.Body)
+	log.Infof("Creating Package %v", string(v)) */
 	// Process Request
-	var pkg models.Package
-	if err := c.ShouldBindJSON(&pkg); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData" +
-			"or it is formed improperly (e.g. Content and URL are both set"})
+	var data models.PackageData
+	if err := c.ShouldBindJSON(&data); err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
-	data := pkg.Data
-	metadata := pkg.Metadata
+
+	log.Infof("Creating Package, data: %+v", data)
+
+	metadata := models.PackageMetadata{
+		Name:    "Foo",
+		Version: "1.0",
+	}
 
 	// Verify that only one of Content and URl are set
 	dataURLEmpty := len(data.URL) == 0
@@ -82,16 +86,11 @@ func PackageCreate(c *gin.Context) {
 	// Check Rating
 
 	// PackageMetadata
-	paramID := strings.TrimLeft(c.Param("id"), "/")
+	paramID := ""
+	count := 0
 
-	var count int
-	err = db.QueryRow("SELECT COUNT(*) FROM PackageMetadata WHERE PackageID = ?", paramID).Scan(&count)
-	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error5"})
-		return
-	}
 	// Generate new ID if package ID already exists or if the id is not specified
-	if count > 0 || paramID == "" {
+	if paramID == "" {
 		for {
 			rand.Seed(time.Now().UnixNano())
 			const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
@@ -113,6 +112,7 @@ func PackageCreate(c *gin.Context) {
 		}
 	}
 	metadata.ID = paramID
+	log.Infof("Generated package id: %v", metadata.ID)
 	// Insert PackageMetadata
 	result, err := db.Exec("INSERT INTO PackageMetadata (Name, Version, PackageID) VALUES (?, ?, ?)", metadata.Name, metadata.Version, paramID)
 	if err != nil {
@@ -125,7 +125,7 @@ func PackageCreate(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error7"})
 		return
 	}
-
+	log.Infof("MetadataID created %v", metadataID)
 	// Insert PackageData
 	var dataID int64
 	if dataURLEmpty {
@@ -170,7 +170,7 @@ func PackageCreate(c *gin.Context) {
 		Action:          "CREATE",
 	}
 	var user_table_id int
-	err = db.QueryRow("SELECT user.id FROM User WHERE user.name= ?", User_temp.Name).Scan(&user_table_id)
+	err = db.QueryRow("SELECT User.id FROM User WHERE User.name= ?", User_temp.Name).Scan(&user_table_id)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error9"})
 		return

@@ -184,7 +184,7 @@ func authenticate(c *gin.Context) bool {
 	}
 
 	log.Infof("Not authenticating, logged in %v, %v", c.ClientIP(), true)
-	c.Set("username", c.ClientIP())
+	c.Set("username", "foo")
 	c.Set("admin", true)
 	return true
 }
