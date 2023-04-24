@@ -738,7 +738,7 @@ func PackagesList(c *gin.Context) {
 							c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 							return
 					}
-					queryString += fmt.Sprintf("@%s", semverRange)
+					queryString += fmt.Sprintf("@%v", semverRange)
 			}
         queryStrings = append(queryStrings, queryString)
     }
