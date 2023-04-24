@@ -25,7 +25,7 @@ import (
 )
 
 var db *sql.DB
-var ds api.InMemoryDatstore
+var ds InMemoryDatstore
 
 func initDB() error {
 	var err error
