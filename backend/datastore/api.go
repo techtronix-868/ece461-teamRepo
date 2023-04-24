@@ -73,7 +73,7 @@ func PackageCreate(c *gin.Context) {
 
 	metadata := models.PackageMetadata{
 		Name:    name,
-		Version: "1.0",
+		Version: "1.0.0",
 	}
 
 	// Verify that only one of Content and URl are set
@@ -287,22 +287,32 @@ func PackageDelete(c *gin.Context) {
 	// Find and delete package history entries and then the package: note that this deletes the package version with the given ID and not necessarily all its versions
 	packageID := strings.TrimLeft(c.Param("id"), "/")
 	var metadataID int
+
+	log.Infof("Deleting packageID %v", packageID)
+
 	err := db.QueryRow("SELECT id FROM PackageMetadata WHERE PackageID = ?", packageID).Scan(&metadataID)
+
 	if err != nil {
+		log.Errorf("SQL error, failed to get metadata id: %v", err)
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"description": "Package does not exist"})
 		return
 	}
+
+	log.Infof("Retrieved metadataID %v", metadataID)
+
 	_, err = db.Exec("DELETE FROM PackageHistoryEntry WHERE package_metadata_id = ?", metadataID)
 	if err != nil {
+		log.Errorf("SQL error: Failed to delete from history: %v", err)
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
 	}
 
 	_, err = db.Exec("DELETE  pmd, pd, p FROM Package p "+
-		"LEFT JOIN PackageMetaData pmd ON p.metadata_id = pmd.id "+
+		"LEFT JOIN PackageMetadata pmd ON p.metadata_id = pmd.id "+
 		"LEFT JOIN PackageData pd ON p.data_id = pd.id "+
 		"WHERE p.metadata_id = ?", metadataID)
 	if err != nil {
+		log.Errorf("SQL error: Failed to get package metadata and data: %v", err)
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
 	}
@@ -596,6 +606,7 @@ func PackagesList(c *gin.Context) {
 	}
 	queryStr := fmt.Sprintf("SELECT * FROM PackageMetadata WHERE Name = %s AND Version REGEXP '^[^.]+\\.[^.]+\\.[^.]+$' AND  %s LIMIT %d OFFSET %d;", strings.Join(nameConditions, ","), strings.Join(rangeConditions, " AND "), limit, offset)
 	// fmt.Print(queryStr)
+	log.Infof("Querying DB %v", queryStr)
 
 	rows, err := db.Query(queryStr)
 	if err != nil {
