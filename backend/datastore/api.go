@@ -360,7 +360,7 @@ func PackageByNameDelete(c *gin.Context) {
 		}
 
 		_, err = db.Exec("DELETE  pmd, pd, p FROM Package p "+
-			"LEFT JOIN PackageMetaData pmd ON p.metadata_id = pmd.id "+
+			"LEFT JOIN PackageMetadata pmd ON p.metadata_id = pmd.id "+
 			"LEFT JOIN PackageData pd ON p.data_id = pd.id "+
 			"WHERE p.metadata_id = ?", metadataID)
 		if err != nil {

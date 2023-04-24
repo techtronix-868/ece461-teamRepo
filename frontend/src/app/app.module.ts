@@ -81,7 +81,7 @@ import { UpdatePageComponent } from './update-page/update-page.component';
     MatInputModule,
     FormsModule
   ],
-  providers: [{ provide: BASE_PATH, useValue: "http://localhost:8000"}],
+  providers: [{ provide: BASE_PATH, useValue: "https://ece461-server-rruekicr4q-uc.a.run.app"}],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
