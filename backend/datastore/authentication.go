@@ -3,10 +3,11 @@ package api
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
@@ -147,7 +148,6 @@ func CreateAuthToken(c *gin.Context) {
 	} else {
 		c.AbortWithStatusJSON(http.StatusNotImplemented, "")
 	}
-
 }
 
 func authenticate(c *gin.Context) bool {
@@ -179,9 +179,11 @@ func authenticate(c *gin.Context) bool {
 		}
 		c.Set("username", username)
 		c.Set("admin", isAdmin)
+		log.Infof("Authenticated %v, isAdmin: %v", username, isAdmin)
 		return true
 	}
 
+	log.Infof("Not authenticating, logged in %v, %v", c.ClientIP(), true)
 	c.Set("username", c.ClientIP())
 	c.Set("admin", true)
 	return true

@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/Masterminds/semver/v3"
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
@@ -48,11 +50,12 @@ func PackageCreate(c *gin.Context) {
 		return
 	}
 
+	log.Infof("Creating Package %v", c.Request.Body)
 	// Process Request
 	var pkg models.Package
 	if err := c.ShouldBindJSON(&pkg); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" +
-			"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid."})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData" +
+			"or it is formed improperly (e.g. Content and URL are both set"})
 		return
 	}
 	data := pkg.Data
@@ -62,8 +65,8 @@ func PackageCreate(c *gin.Context) {
 	dataURLEmpty := len(data.URL) == 0
 	dataContentEmpty := len(data.Content) == 0
 	if !((dataURLEmpty && !dataContentEmpty) || (!dataURLEmpty && dataContentEmpty)) { // XOR
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" +
-			"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid."})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData" +
+			"or it is formed improperly (e.g. Content and URL are both set)"})
 		return
 	}
 
