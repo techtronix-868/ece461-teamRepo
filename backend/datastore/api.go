@@ -29,6 +29,10 @@ type UserCredentials struct {
 	IsAdmin bool `json:"isAdmin"`
 	Password string `json:"password"`
 }
+type PackageRegEx struct {
+	RegEx string `json:"regex"`
+}
+
 
 
 /*  HELPER FUNCTIONS */
@@ -861,8 +865,6 @@ func convertToBasicComparisons(v string) (string, error) {
 }
 
 
-
-
 // PackageByRegExGet - Get any packages fitting the regular expression.
 func PackageByRegExGet(c *gin.Context) {
 	// Search for packages that match the regular expression
@@ -887,7 +889,7 @@ func PackageByRegExGet(c *gin.Context) {
 	}
 
 	// Parse the request body as a PackageRegEx object
-	var query string
+	var query PackageRegEx
 	err = c.ShouldBindJSON(&query)
 	if err != nil {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
@@ -895,7 +897,8 @@ func PackageByRegExGet(c *gin.Context) {
 	}	
 
 	var packages []models.PackageMetadata
-	rows, err := db.Query("SELECT version, name, id FROM packagesmetadata WHERE name REGEXP ?", query)
+	fmt.Print(query)
+	rows, err := db.Query("SELECT version, name, id FROM packagemetadata WHERE name REGEXP ?", query.RegEx)
 	if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
 			return
@@ -914,14 +917,14 @@ func PackageByRegExGet(c *gin.Context) {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
 			return
 	}
-
+	
 	// Return the packages as a JSON array
-	if len(packages) > 0 {
-			c.JSON(http.StatusOK, packages)
-	} else {
-			c.AbortWithStatus(http.StatusNotFound)
+	if len(packages) == 0 {
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"description":"No package found under this regex."})
+		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message":"good"})
+	c.JSON(http.StatusOK, packages)
+
 }
 
 // PackageRate -

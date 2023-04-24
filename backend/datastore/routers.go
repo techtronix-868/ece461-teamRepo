@@ -107,17 +107,17 @@
 		 PackageByNameGet,
 	 },
  
-	//  {
-	// 	 "PackageByRegExGet",
-	// 	 http.MethodPost,
-	// 	 "/package/byRegEx",
-	// 	 PackageByRegExGet,
-	//  },
+	 {
+		 "PackageByRegExGet",
+		 http.MethodPost,
+		 "/package/byRegEx",
+		 PackageByRegExGet,
+	 },
  
 	 {
 		 "PackageCreate",
 		 http.MethodPost,
-		 "/package/*id",
+		 "/package",
 		 PackageCreate,
 	 },
  
