@@ -570,7 +570,7 @@ func PackagesList(c *gin.Context) {
 	var rangeConditions []string
 	for _, query := range packageQueries {
 		if query.Version == "" {
-			rangeConditions = append(rangeConditions, "0.0.0 <= Version AND Version < 9999999.999.999")
+			rangeConditions = append(rangeConditions, "Version IS NOT NULL")
 		} else {
 			r, err := convertToBasicComparisons(query.Version)
 			if err != nil {
