@@ -30,7 +30,6 @@ type UserCredentials struct {
 }
 
 
-
 /*  HELPER FUNCTIONS */
 func getDB(c *gin.Context) (*sql.DB, bool) {
 	db_i, ok := c.Get("db")
@@ -45,6 +44,7 @@ func getDB(c *gin.Context) (*sql.DB, bool) {
 	}
 	return db, true
 }
+
 
 func ExtractUserInfoFromToken(tokenString string) (string, string, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
@@ -77,7 +77,6 @@ func ExtractUserInfoFromToken(tokenString string) (string, string, error) {
 }
 
 /*  API Endpoints */
-
 
 func CreateUser(c *gin.Context) {
 	db, ok := getDB(c)
@@ -209,6 +208,15 @@ func PackageCreate(c *gin.Context) {
 		"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid." })
 		return
 	}
+
+	// Verify BOTH package name and version name are not the same. It's ok if package name is the same and versionis different.
+	var exists bool
+	err = db.QueryRow("SELECT * FROM PackageMetadata WHERE Name = ? AND Version = ?", metadata.Name, metadata.Version).Scan(&exists)
+	if err != sql.ErrNoRows {
+		// row does not exist, return an error response
+		c.AbortWithStatusJSON(http.StatusConflict, gin.H{"description": "Package exists already" })
+		return
+  }
 
 	// Check Rating
 	
@@ -529,24 +537,21 @@ func PackageRetrieve(c *gin.Context) {
 
 	var packageName, packageVersion, packageContent, packageURL, packageJSProgram string
 	fmt.Print(packageID)
-	err = db.QueryRow("SELECT m.Name, m.Version, d.Content, d.URL, d.JSProgram " + 
-	"FROM Package p " + 
-	"INNER JOIN PackageMetadata m ON p.metadata_id = m.id " + 
-	"INNER JOIN PackageData d ON p.data_id = d.id " + 
-	"WHERE m.PackageID = ?;", packageID).Scan(&packageName, &packageVersion, &packageContent, &packageURL, &packageJSProgram)
 
-	if err != nil {
-		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": err})
-		// c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"description":"Package does not exist."})
-		return
-	}
-	
+
+	err = db.QueryRow("SELECT m.Name, m.Version, d.Content, d.URL, d.JSProgram "+ 
+	"FROM Package p "+ 
+	"INNER JOIN PackageMetadata m ON p.metadata_id = m.id "+ 
+	"INNER JOIN PackageData d ON p.data_id = d.id "+ 
+	"WHERE m.PackageID = ?", packageID).Scan(&packageName, &packageVersion, &packageContent, &packageURL, &packageJSProgram)
+	// for some reason this gives an err that is empty but also not nil; if err is checked against nil, it will trigger error control flow.
+
 	if err == sql.ErrNoRows {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"description":"Package does not exist."})
 		return	
-	}
-
-
+	} 
+	
+	
 	metadata := models.PackageMetadata {
 		ID: packageID,
 		Name: packageName,
@@ -695,7 +700,6 @@ func PackageByNameGet(c *gin.Context) {
 }
 
 
-
 func PackagesList(c *gin.Context) {
 	db, ok := getDB(c)
 	if !ok {
@@ -771,7 +775,6 @@ func PackagesList(c *gin.Context) {
     c.JSON(http.StatusOK, packages)
 }
 
-
 func getPackages(c *gin.Context, queryStrings []string, offset, limit int) ([]models.PackageMetadata, error) {
 	db, ok := getDB(c)
 	if !ok {
@@ -805,8 +808,6 @@ func getPackages(c *gin.Context, queryStrings []string, offset, limit int) ([]mo
 
 	return packages, nil
 }
-
-
 
 // PackageByRegExGet - Get any packages fitting the regular expression.
 func PackageByRegExGet(c *gin.Context) {
