@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"fmt"
 	"strings"
-	//"strconv"
+	"strconv"
 	"math/rand"
 	"time"
 	"os"
@@ -769,6 +769,18 @@ func PackagesList(c *gin.Context) {
 		return
 	}
 
+	// Parse query parameters
+	limitStr := c.Query("limit")
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		limit = 10 // default limit
+	}
+	offsetStr := c.Query("offset")
+	offset, err := strconv.Atoi(offsetStr)
+	if err != nil {
+		offset = 0 // default offset
+	}
+
 	// Parse request body
 	var packageQueries []models.PackageQuery
 	err = c.BindJSON(&packageQueries)
@@ -797,7 +809,7 @@ func PackagesList(c *gin.Context) {
 			rangeConditions = append(rangeConditions, r)
 		}
 	}
-	queryStr := fmt.Sprintf("SELECT * FROM PackageMetadata WHERE Name = %s AND Version REGEXP '^[^.]+\\.[^.]+\\.[^.]+$' AND  %s;", strings.Join(nameConditions, ","), strings.Join(rangeConditions, " AND "))
+	queryStr := fmt.Sprintf("SELECT * FROM PackageMetadata WHERE Name = %s AND Version REGEXP '^[^.]+\\.[^.]+\\.[^.]+$' AND  %s LIMIT %d OFFSET %d;" , strings.Join(nameConditions, ","), strings.Join(rangeConditions, " AND "), limit, offset)
 	// fmt.Print(queryStr)
 
 	rows, err := db.Query(queryStr)
@@ -815,9 +827,15 @@ func PackagesList(c *gin.Context) {
 		packages = append(packages, p)
 	}
 
-	c.JSON(http.StatusOK, packages)
+	if len(packages) >= limit {
+		c.AbortWithStatusJSON(413, gin.H{"description":"Too many packages returned."})
+		return
+	}
 
+
+	c.JSON(http.StatusOK, packages)
 }
+
 func convertToBasicComparisons(v string) (string, error) {
 	if strings.HasPrefix(v, "^") {
 			vParsed := semver.MustParse(v[1:])
