@@ -545,36 +545,65 @@ func PackageRetrieve(c *gin.Context) {
 		"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid." })
 		return
 	}
-		
-	var packageID string
-	packageID = strings.TrimLeft(c.Param("id"), "/")
 
-	var packageName, packageVersion, packageContent, packageURL, packageJSProgram string
-	fmt.Print(packageID)
+	
+	packageID := strings.TrimLeft(c.Param("id"), "/")
+
+	var packageContent, packageURL, packageJSProgram sql.NullString
+	var packageName, packageVersion, packageContentS, packageURLS, packageJSProgramS string
+	var package_data_id int
 
 
-	err = db.QueryRow("SELECT m.Name, m.Version, d.Content, d.URL, d.JSProgram "+ 
+	err = db.QueryRow("SELECT p.data_id, m.Name, m.Version "+ 
 	"FROM Package p "+ 
-	"INNER JOIN PackageMetadata m ON p.metadata_id = m.id "+ 
-	"INNER JOIN PackageData d ON p.data_id = d.id "+ 
-	"WHERE m.PackageID = ?", packageID).Scan(&packageName, &packageVersion, &packageContent, &packageURL, &packageJSProgram)
-	// for some reason this gives an err that is empty but also not nil; if err is checked against nil, it will trigger error control flow.
-
+	"JOIN PackageMetadata m ON p.metadata_id = m.id "+ 
+	"WHERE m.PackageID = ?", packageID).Scan(&package_data_id, &packageName, &packageVersion)
 	if err == sql.ErrNoRows {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"description":"Package does not exist."})
 		return	
-	} 
+	}  else if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+		return	
+	}
+	fmt.Print(package_data_id)
+
+	err = db.QueryRow("SELECT Content, URL, JSProgram FROM PackageData WHERE id = ?", package_data_id).Scan(&packageContent, &packageURL, &packageJSProgram)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"description":"Package does not exist."})
+			return	
+		} else {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error1": err})
+			return	
+		}
+	}
+	if packageContent.Valid {
+		packageContentS = packageContent.String
+	} else {
+		packageContentS = ""
+	}
+	if packageURL.Valid {
+		packageURLS = packageURL.String
+	} else {
+		packageURLS = ""
+	}
+	if packageJSProgram.Valid {
+		packageJSProgramS = packageJSProgram.String
+	} else {
+		packageJSProgramS= ""
+	}
+	// do something with retrieved data
 	
-	
+
 	metadata := models.PackageMetadata {
 		ID: packageID,
 		Name: packageName,
 		Version: packageVersion,
 	}
 	data := models.PackageData {
-		Content: packageContent,
-		URL: packageURL,
-		JSProgram: packageJSProgram,
+		Content: packageContentS,
+		URL: packageURLS,
+		JSProgram: packageJSProgramS,
 	}
 
 	c.JSON(http.StatusOK, gin.H{
