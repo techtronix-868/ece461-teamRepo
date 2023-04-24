@@ -117,6 +117,7 @@ func CreateAuthToken(c *gin.Context) {
 		return
 	}
 
+	log.Printf("CreateAuthToken: have db: %+v", db)
 	//	Get authentication request from request body
 	var authReq models.AuthenticationRequest
 	if err := c.ShouldBindJSON(&authReq); err != nil {
