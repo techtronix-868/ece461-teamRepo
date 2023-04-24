@@ -524,22 +524,28 @@ func PackageRetrieve(c *gin.Context) {
 		return
 	}
 		
-	packageID := strings.TrimLeft(c.Param("id"), "/")
+	var packageID string
+	packageID = strings.TrimLeft(c.Param("id"), "/")
 
 	var packageName, packageVersion, packageContent, packageURL, packageJSProgram string
-
-	err = db.QueryRow(`
-			SELECT m.Name, m.Version, d.Content, d.URL, d.JSProgram
-			FROM Package p
-			INNER JOIN PackageMetadata m ON p.metadata_id = m.id
-			INNER JOIN PackageData d ON p.data_id = d.id
-			WHERE m.PackageID = ?;
-	`, packageID).Scan(&packageName, &packageVersion, &packageContent, &packageURL, &packageJSProgram)
+	fmt.Print(packageID)
+	err = db.QueryRow("SELECT m.Name, m.Version, d.Content, d.URL, d.JSProgram 
+	FROM Package p 
+	INNER JOIN PackageMetadata m ON p.metadata_id = m.id 
+	INNER JOIN PackageData d ON p.data_id = d.id 
+	WHERE m.PackageID = ?;", packageID).Scan(&packageName, &packageVersion, &packageContent, &packageURL, &packageJSProgram)
 
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"description":"Package does not exist."})
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": err})
+		// c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"description":"Package does not exist."})
 		return
 	}
+	
+	if err == sql.ErrNoRows {
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"description":"Package does not exist."})
+		return	
+	}
+
 
 	metadata := models.PackageMetadata {
 		ID: packageID,

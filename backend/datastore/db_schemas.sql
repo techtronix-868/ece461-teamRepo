@@ -1,11 +1,3 @@
-CREATE TABLE Error (
-  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  code INT,
-  message VARCHAR(255),
-  PRIMARY KEY (id)
-);
-
-
 CREATE TABLE PackageMetadata (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   Name VARCHAR(255) UNIQUE,
@@ -69,20 +61,4 @@ CREATE TABLE PackageHistoryEntry (
   PRIMARY KEY (id),
   FOREIGN KEY (user_id) REFERENCES User(id),
   FOREIGN KEY (package_metadata_id) REFERENCES PackageMetadata(id)
-);
-
-CREATE TABLE AuthenticationToken (
-  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  user_id INT UNSIGNED,
-  token VARCHAR(255),
-  PRIMARY KEY (id),
-  FOREIGN KEY (user_id) REFERENCES User(id)
-);
-
-CREATE TABLE AuthenticationRequest (
-  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  user_id INT UNSIGNED,
-  secret VARCHAR(255),
-  PRIMARY KEY (id),
-  FOREIGN KEY (user_id) REFERENCES User(id)
 );
