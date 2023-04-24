@@ -1,5 +1,6 @@
 package api
 
+// SECURITY CONCERN, AUTHENTICATION ISADMIN FIELD CAN BE SET BY USER
 import (
 	"database/sql"
 	//"encoding/json"
@@ -25,7 +26,7 @@ type AuthenticationToken string
 
 type UserCredentials struct {
 	Name string `json:"username"`
-	isAdmin bool `json:"isAdmin"`
+	IsAdmin bool `json:"isAdmin"`
 	Password string `json:"password"`
 }
 
@@ -89,7 +90,8 @@ func CreateUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	result, err := db.Exec("INSERT INTO User (name, isAdmin) VALUES (?, ?)", info.Name, info.isAdmin)
+	fmt.Print(info.IsAdmin)
+	result, err := db.Exec("INSERT INTO User (name, isAdmin) VALUES (?, ?)", info.Name, info.IsAdmin)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -636,7 +638,8 @@ func RegistryReset(c *gin.Context) {
 
 	// verify admin status	
 	var isAdmin bool 
-	err = db.QueryRow("SELECT isAdmin FROM User WHERE name ?", username).Scan(&isAdmin)
+
+	err = db.QueryRow("SELECT isAdmin FROM User WHERE name = ?", username).Scan(&isAdmin)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
