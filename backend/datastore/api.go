@@ -6,29 +6,18 @@ import (
 	//"encoding/json"
 	// "errors"
 	"fmt"
-	"log"
 	"math/rand"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/joho/godotenv"
 	"github.com/mabaums/ece461-web/backend/models"
 )
 
-type AuthenticationToken string
-
-type UserCredentials struct {
-	Name     string `json:"username"`
-	IsAdmin  bool   `json:"isAdmin"`
-	Password string `json:"password"`
-}
 type PackageRegEx struct {
 	RegEx string `json:"regex"`
 }
@@ -48,146 +37,14 @@ func getDB(c *gin.Context) (*sql.DB, bool) {
 	return db, true
 }
 
-func ExtractUserInfoFromToken(tokenString string) (string, string, error) {
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		// Verify that the signing method is HMAC and the secret matches
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		err := godotenv.Load()
-		if err != nil {
-			log.Print("Error loading .env file")
-		}
-
-		secret_key := os.Getenv("SECRET_KEY")
-		return []byte(secret_key), nil
-	})
-	if err != nil {
-		return "", "", err
-	}
-
-	// Extract the "user_name" claim from the token
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		username, ok1 := claims["username"].(string)
-		password, ok2 := claims["password"].(string)
-		if !ok1 || !ok2 {
-			return "", "", fmt.Errorf("invalid claims")
-		}
-		return username, password, nil
-	}
-	return "", "", fmt.Errorf("invalid token")
-}
-
-/*  API Endpoints */
-
-func CreateUser(c *gin.Context) {
-	db, ok := getDB(c)
-	if !ok {
-		return
-	}
-
-	var info UserCredentials
-	if err := c.ShouldBindJSON(&info); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	fmt.Print(info.IsAdmin)
-	result, err := db.Exec("INSERT INTO User (name, isAdmin) VALUES (?, ?)", info.Name, info.IsAdmin)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	userID, err := result.LastInsertId()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	result, err = db.Exec("INSERT INTO UserAuthenticationInfo (user_id, password) VALUES (?, ?)", userID, info.Password)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusCreated, gin.H{"Message": "created user"})
-}
-
-func CreateAuthToken(c *gin.Context) {
-	db, ok := getDB(c)
-	if !ok {
-		return
-	}
-
-	log.Printf("CreateAuthToken: have db: %+v", db)
-	//	Get authentication request from request body
-	var authReq models.AuthenticationRequest
-	if err := c.ShouldBindJSON(&authReq); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Check if user authentication info is correct
-	// For example, verify user's password against stored hash
-	var dbAuthInfo models.UserAuthenticationInfo
-	err := db.QueryRow("SELECT password FROM UserAuthenticationInfo INNER JOIN User ON User.id = UserAuthenticationInfo.user_id WHERE User.name = ?", authReq.User.Name).Scan(&dbAuthInfo.Password)
-	if err == sql.ErrNoRows {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
-		return
-	} else if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Verify password
-	if dbAuthInfo.Password != authReq.Secret.Password {
-		c.JSON(http.StatusUnauthorized, gin.H{"Message": "unauth"})
-	}
-	// Verify password
-	// if !verifyPassword(authReq.Secret.Password, dbAuthInfo.Password) {
-	// 	c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
-	// 	return
-	// }
-
-	// Create the claims for the JWT token
-	claims := jwt.MapClaims{}
-	claims["username"] = authReq.User.Name
-	claims["password"] = authReq.Secret.Password
-	claims["exp"] = time.Now().Add(time.Hour * 1).Unix() // token expires in 1 hour
-
-	// Create the JWT token with HMAC SHA-256 signing
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	// Sign the token with a secret key
-	err = godotenv.Load()
-	if err != nil {
-		log.Print("Error loading .env file")
-	}
-	secret_key := os.Getenv("SECRET_KEY")
-	secret := []byte(secret_key)
-	tokenString, err := token.SignedString(secret)
-	if err != nil {
-		return
-	}
-	c.String(http.StatusOK, "Bearer "+tokenString)
-}
-
 func PackageCreate(c *gin.Context) {
 	// Get Database
 	db, ok := getDB(c)
 	if !ok {
 		return
 	}
-	// Authentication
-	authTokenHeader := c.Request.Header.Get("X-Authorization")
-	if authTokenHeader == "" {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Authentication token not found in request header"})
-		return
-	}
-	username, password, err := ExtractUserInfoFromToken(authTokenHeader)
-	var pass string
-	err = db.QueryRow("SELECT password FROM UserAuthenticationInfo WHERE user_id = (SELECT id FROM User WHERE name = ?)", username).Scan(&pass)
-	if err != nil || pass != password {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" +
-			"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid."})
+
+	if !authenticate(c) {
 		return
 	}
 
@@ -212,7 +69,7 @@ func PackageCreate(c *gin.Context) {
 
 	// Verify BOTH package name and version name are not the same. It's ok if package name is the same and versionis different.
 	var exists bool
-	err = db.QueryRow("SELECT * FROM PackageMetadata WHERE Name = ? AND Version = ?", metadata.Name, metadata.Version).Scan(&exists)
+	err := db.QueryRow("SELECT * FROM PackageMetadata WHERE Name = ? AND Version = ?", metadata.Name, metadata.Version).Scan(&exists)
 	if err != sql.ErrNoRows {
 		// row does not exist, return an error response
 		c.AbortWithStatusJSON(http.StatusConflict, gin.H{"description": "Package exists already"})
@@ -301,8 +158,8 @@ func PackageCreate(c *gin.Context) {
 
 	// Insert PackageHistoryEntry
 	var User_temp models.User
-	User_temp.Name = username
-	User_temp.IsAdmin = false
+	User_temp.Name = c.GetString("username")
+	User_temp.IsAdmin = c.GetBool("admin")
 	packageHistoryEntry := models.PackageHistoryEntry{
 		User:            User_temp,
 		Date:            time.Now(),
@@ -337,17 +194,7 @@ func PackageUpdate(c *gin.Context) {
 	}
 
 	// Authentication
-	authTokenHeader := c.Request.Header.Get("X-Authorization")
-	if authTokenHeader == "" {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Authentication token not found in request header"})
-		return
-	}
-	username, password, err := ExtractUserInfoFromToken(authTokenHeader)
-	var pass string
-	err = db.QueryRow("SELECT password FROM UserAuthenticationInfo WHERE user_id = (SELECT id FROM User WHERE name = ?)", username).Scan(&pass)
-	if err != nil || pass != password {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" +
-			"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid."})
+	if !authenticate(c) {
 		return
 	}
 
@@ -362,7 +209,7 @@ func PackageUpdate(c *gin.Context) {
 	var package_data_id int
 	var package_metadata_id int
 
-	err = db.QueryRow("SELECT p.data_id, pmd.id, pmd.Name, pmd.Version, pmd.PackageID "+
+	err := db.QueryRow("SELECT p.data_id, pmd.id, pmd.Name, pmd.Version, pmd.PackageID "+
 		"FROM Package p "+
 		"JOIN PackageMetadata pmd ON p.metadata_id = pmd.id "+
 		"WHERE pmd.Name = ? AND pmd.Version = ? AND pmd.PackageID = ?",
@@ -388,7 +235,7 @@ func PackageUpdate(c *gin.Context) {
 
 	// Insert PackageHistoryEntry
 	var User_temp models.User
-	User_temp.Name = username
+	User_temp.Name = c.GetString("username")
 	User_temp.IsAdmin = false
 	packageHistoryEntry := models.PackageHistoryEntry{
 		User:            User_temp,
@@ -419,24 +266,14 @@ func PackageDelete(c *gin.Context) {
 	}
 
 	// Authentication
-	authTokenHeader := c.Request.Header.Get("X-Authorization")
-	if authTokenHeader == "" {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Authentication token not found in request header"})
-		return
-	}
-	username, password, err := ExtractUserInfoFromToken(authTokenHeader)
-	var pass string
-	err = db.QueryRow("SELECT password FROM UserAuthenticationInfo WHERE user_id = (SELECT id FROM User WHERE name = ?)", username).Scan(&pass)
-	if err != nil || pass != password {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" +
-			"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid."})
+	if !authenticate(c) {
 		return
 	}
 
 	// Find and delete package history entries and then the package: note that this deletes the package version with the given ID and not necessarily all its versions
 	packageID := strings.TrimLeft(c.Param("id"), "/")
 	var metadataID int
-	err = db.QueryRow("SELECT id FROM PackageMetadata WHERE PackageID = ?", packageID).Scan(&metadataID)
+	err := db.QueryRow("SELECT id FROM PackageMetadata WHERE PackageID = ?", packageID).Scan(&metadataID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"description": "Package does not exist"})
 		return
@@ -467,17 +304,7 @@ func PackageByNameDelete(c *gin.Context) {
 	}
 
 	// Authentication
-	authTokenHeader := c.Request.Header.Get("X-Authorization")
-	if authTokenHeader == "" {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Authentication token not found in request header"})
-		return
-	}
-	username, password, err := ExtractUserInfoFromToken(authTokenHeader)
-	var pass string
-	err = db.QueryRow("SELECT password FROM UserAuthenticationInfo WHERE user_id = (SELECT id FROM User WHERE name = ?)", username).Scan(&pass)
-	if err != nil || pass != password {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" +
-			"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid."})
+	if !authenticate(c) {
 		return
 	}
 
@@ -529,18 +356,7 @@ func PackageRetrieve(c *gin.Context) {
 		return
 	}
 
-	// Authentication
-	authTokenHeader := c.Request.Header.Get("X-Authorization")
-	if authTokenHeader == "" {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Authentication token not found in request header"})
-		return
-	}
-	username, password, err := ExtractUserInfoFromToken(authTokenHeader)
-	var pass string
-	err = db.QueryRow("SELECT password FROM UserAuthenticationInfo WHERE user_id = (SELECT id FROM User WHERE name = ?)", username).Scan(&pass)
-	if err != nil || pass != password {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" +
-			"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid."})
+	if !authenticate(c) {
 		return
 	}
 
@@ -550,7 +366,7 @@ func PackageRetrieve(c *gin.Context) {
 	var packageName, packageVersion, packageContentS, packageURLS, packageJSProgramS string
 	var package_data_id int
 
-	err = db.QueryRow("SELECT p.data_id, m.Name, m.Version "+
+	err := db.QueryRow("SELECT p.data_id, m.Name, m.Version "+
 		"FROM Package p "+
 		"JOIN PackageMetadata m ON p.metadata_id = m.id "+
 		"WHERE m.PackageID = ?", packageID).Scan(&package_data_id, &packageName, &packageVersion)
@@ -615,35 +431,19 @@ func RegistryReset(c *gin.Context) {
 	}
 
 	// Authentication
-	authTokenHeader := c.Request.Header.Get("X-Authorization")
-	if authTokenHeader == "" {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Authentication token not found in request header"})
-		return
-	}
-	username, password, err := ExtractUserInfoFromToken(authTokenHeader)
-	var pass string
-	err = db.QueryRow("SELECT password FROM UserAuthenticationInfo WHERE user_id = (SELECT id FROM User WHERE name = ?)", username).Scan(&pass)
-	if err != nil || pass != password {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" +
-			"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid."})
+	if !authenticate(c) {
 		return
 	}
 
 	// verify admin status
-	var isAdmin bool
 
-	err = db.QueryRow("SELECT isAdmin FROM User WHERE name = ?", username).Scan(&isAdmin)
-	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
-		return
-	}
-	if !isAdmin {
+	if !c.GetBool("admin") {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"description": "You do not have permission to reset the registry"})
 		return
 	}
 
 	// Delete all data from Package table
-	_, err = db.Exec("DELETE FROM Package")
+	_, err := db.Exec("DELETE FROM Package")
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
@@ -682,20 +482,9 @@ func PackageByNameGet(c *gin.Context) {
 	}
 
 	// Authentication
-	authTokenHeader := c.Request.Header.Get("X-Authorization")
-	if authTokenHeader == "" {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Authentication token not found in request header"})
+	if !authenticate(c) {
 		return
 	}
-	username, password, err := ExtractUserInfoFromToken(authTokenHeader)
-	var pass string
-	err = db.QueryRow("SELECT password FROM UserAuthenticationInfo WHERE user_id = (SELECT id FROM User WHERE name = ?)", username).Scan(&pass)
-	if err != nil || pass != password {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" +
-			"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid."})
-		return
-	}
-
 	// Get name from query parameter
 	name := strings.TrimLeft(c.Param("name"), "/")
 
@@ -747,17 +536,7 @@ func PackagesList(c *gin.Context) {
 	}
 
 	// Authentication
-	authTokenHeader := c.Request.Header.Get("X-Authorization")
-	if authTokenHeader == "" {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Authentication token not found in request header"})
-		return
-	}
-	username, password, err := ExtractUserInfoFromToken(authTokenHeader)
-	var pass string
-	err = db.QueryRow("SELECT password FROM UserAuthenticationInfo WHERE user_id = (SELECT id FROM User WHERE name = ?)", username).Scan(&pass)
-	if err != nil || pass != password {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" +
-			"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid."})
+	if !authenticate(c) {
 		return
 	}
 
@@ -860,23 +639,13 @@ func PackageByRegExGet(c *gin.Context) {
 	}
 
 	// Authentication
-	authTokenHeader := c.Request.Header.Get("X-Authorization")
-	if authTokenHeader == "" {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Authentication token not found in request header"})
-		return
-	}
-	username, password, err := ExtractUserInfoFromToken(authTokenHeader)
-	var pass string
-	err = db.QueryRow("SELECT password FROM UserAuthenticationInfo WHERE user_id = (SELECT id FROM User WHERE name = ?)", username).Scan(&pass)
-	if err != nil || pass != password {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"description": "There is missing field(s) in the PackageData/AuthenticationToken" +
-			"or it is formed improperly (e.g. Content and URL are both set), or the AuthenticationToken is invalid."})
+	if !authenticate(c) {
 		return
 	}
 
 	// Parse the request body as a PackageRegEx object
 	var query PackageRegEx
-	err = c.ShouldBindJSON(&query)
+	err := c.ShouldBindJSON(&query)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return

@@ -41,7 +41,7 @@ func main() {
 	defer db.Close()
 
 	router := sw.NewRouter(db)
-	router.SetTrustedProxies([]string{"192.168.1.1/16"})
+	router.SetTrustedProxies([]string{"192.168.1.1/16"}) // ????
 	log.Fatal(router.Run(":8000"))
 
 	log.SetLevel(log.DebugLevel)
