@@ -836,6 +836,7 @@ func PackagesList(c *gin.Context) {
 	c.JSON(http.StatusOK, packages)
 }
 
+// UTILITY FOR PACKAGESLIST
 func convertToBasicComparisons(v string) (string, error) {
 	if strings.HasPrefix(v, "^") {
 			vParsed := semver.MustParse(v[1:])
