@@ -1,10 +1,24 @@
 <h1>{{name}}</h1>
 <h2>Rating</h2>
-{{pkg_rate}}
+<ul>
+    <li>Bus Factor: {{pkg_rate.BusFactor}}</li>
+    <li>Correctness: {{pkg_rate.Correctness}}</li>
+    <li>Good Pinning: {{pkg_rate.GoodPinningPractice}}</li>
+    <li>License: {{pkg_rate.LicenseScore}} </li>
+    <li>Net Score: {{pkg_rate.NetScore}} </li>
+    <li>Pull Request: {{pkg_rate.PullRequest}}</li>
+    <li>Ramp Up: {{pkg_rate.RampUp}} </li>
+    <li>ResponsiveMaintainer: {{pkg_rate.ResponsiveMaintainer}}</li>
+</ul>
+
 <h2>History</h2>
-<div *ngFor="let entry of pkg_history">
-    {{entry.User.name}}
-    {{entry.Date}}
-    {{entry.PackageMetadata}}
-    {{entry.Action}}
-</div>
+<table>
+    <tr *ngFor="let entry of pkg_history">
+        <td>{{entry.User.name}}</td>
+        <td>{{entry.Date}}</td>
+        <td>{{entry.PackageMetadata.ID}}</td>
+        <td>{{entry.PackageMetadata.Name}}</td>
+        <td>{{entry.PackageMetadata.Version}}</td>
+        <td>{{entry.Action}}</td>
+    </tr>
+</table>

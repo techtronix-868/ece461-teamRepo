@@ -5,12 +5,16 @@ import { PackageResultsComponent } from './package-results/package-results.compo
 import { AdvancedSearchComponent } from './advanced-search/advanced-search.component';
 import { HomePageComponent } from './home-page/home-page.component';
 import { PackagePageComponent } from './package-page/package-page.component';
+import { CreatePageComponent } from './create-page/create-page.component';
+import { UpdatePageComponent } from './update-page/update-page.component';
 
 const routes: Routes = [
   { path: '', component: HomePageComponent},
   { path: 'search', component: PackageResultsComponent},
   { path: 'search/advanced', component: AdvancedSearchComponent},
-  { path: 'package', component: PackagePageComponent}
+  { path: 'package', component: PackagePageComponent},
+  { path: 'create', component: CreatePageComponent},
+  { path: 'update', component: UpdatePageComponent}
 ];
 
 @NgModule({

@@ -38,6 +38,7 @@ import { MatInputModule } from '@angular/material/input'
 import { FormsModule } from '@angular/forms';
 import { PackagePageComponent } from './package-page/package-page.component';
 import { CreatePageComponent } from './create-page/create-page.component';
+import { UpdatePageComponent } from './update-page/update-page.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -46,7 +47,8 @@ import { CreatePageComponent } from './create-page/create-page.component';
     AdvancedSearchComponent,
     HomePageComponent,
     PackagePageComponent,
-    CreatePageComponent
+    CreatePageComponent,
+    UpdatePageComponent
   ],
   imports: [
     BrowserModule,

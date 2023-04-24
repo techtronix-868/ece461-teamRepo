@@ -1,11 +1,13 @@
 package openapi
 
 import (
-	log "github.com/sirupsen/logrus"
+	"encoding/base64"
+	"fmt"
 	"net/http"
 	"strconv"
-	"fmt"
+
 	"github.com/mabaums/ece461-web/backend/models"
+	log "github.com/sirupsen/logrus"
 )
 
 type InMemoryDatstore struct {
@@ -25,7 +27,7 @@ func (md *InMemoryDatstore) initIfEmpty() {
 				ID:      strconv.Itoa(i),
 			}
 			pkg_data := models.PackageData{
-				Content:   "Content",
+				Content:   base64.RawStdEncoding.EncodeToString([]byte("TEST")),
 				JSProgram: "string",
 			}
 			pkg := models.Package{Data: pkg_data, Metadata: pkg_meta}
