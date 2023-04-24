@@ -434,6 +434,7 @@ func PackageDelete(c *gin.Context) {
 		return
 	}
 
+	// Find and delete package history entries and then the package: note that this deletes the package version with the given ID and not necessarily all its versions
 	packageID := strings.TrimLeft(c.Param("id"), "/")
 	var metadataID int
 	err = db.QueryRow("SELECT id FROM PackageMetadata WHERE PackageID = ?", packageID).Scan(&metadataID)
@@ -483,30 +484,43 @@ func PackageByNameDelete(c *gin.Context) {
 
 
 	packageName := strings.TrimLeft(c.Param("name"), "/")
-	var metadataID int
-	err = db.QueryRow("SELECT id FROM PackageMetadata WHERE Name = ?", packageName).Scan(&metadataID)
+	// Get the metadata IDs of all packages with the given name
+	var metadataIDs []int
+	rows, err := db.Query("SELECT id FROM PackageMetadata WHERE Name = ?", packageName)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"description": "Package does not exist"})
-		return
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+			return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var metadataID int
+		err = rows.Scan(&metadataID)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+			return
+		}
+		metadataIDs = append(metadataIDs, metadataID)
 	}
 
-	_, err = db.Exec("DELETE FROM PackageHistoryEntry WHERE package_metadata_id = ?", metadataID)
-	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
-		return
-	}
+	// Delete all history entries, package data, and package versions for each metadata ID
+	for _, metadataID := range metadataIDs {
+		_, err = db.Exec("DELETE FROM PackageHistoryEntry WHERE package_metadata_id = ?", metadataID)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+			return
+		}
 
-	_, err = db.Exec("DELETE p, pmd, pd, FROM Package p "+
+		_, err = db.Exec("DELETE  pmd, pd, p FROM Package p "+
 		"LEFT JOIN PackageMetaData pmd ON p.metadata_id = pmd.id "+
 		"LEFT JOIN PackageData pd ON p.data_id = pd.id "+
 		"WHERE p.metadata_id = ?", metadataID)
-
-	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
-		return
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+			return
+		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{"description": "Package  is deleted"})
+	c.JSON(http.StatusOK, gin.H{"description": "Package is deleted"})
 }
 
 // PackageRetrieve - Interact with the package with this ID
