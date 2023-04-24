@@ -40,6 +40,7 @@ func getDB(c *gin.Context) (*sql.DB, bool) {
 }
 
 func PackageCreate(c *gin.Context) {
+
 	// Get Database
 	db, ok := getDB(c)
 	if !ok {
@@ -60,8 +61,18 @@ func PackageCreate(c *gin.Context) {
 
 	log.Infof("Creating Package, data: %+v", data)
 
+	//TODO: Implement actual package creation from URLs and/or Content (Extract metadata and data)
+	//--------------------------------------
+
+	// THIS IS TEMPORARY TO DEBUG REST OF API
+	name := "foo"
+	if len(data.URL) > 0 {
+		name_a := strings.Split(data.URL, "/")
+		name = name_a[len(name_a)-1]
+	}
+
 	metadata := models.PackageMetadata{
-		Name:    "Foo",
+		Name:    name,
 		Version: "1.0",
 	}
 
