@@ -127,7 +127,7 @@ func CreateAuthToken(c *gin.Context) {
 	// Check if user authentication info is correct
 	// For example, verify user's password against stored hash
 	var dbAuthInfo models.UserAuthenticationInfo
-	err := db.QueryRow("SELECT password FROM UserAuthenticationInfo INNER JOIN User ON User.id = UserAuthenticationInfo.user_id WHERE user.name = ?", authReq.User.Name).Scan(&dbAuthInfo.Password)
+	err := db.QueryRow("SELECT password FROM UserAuthenticationInfo INNER JOIN User ON User.id = UserAuthenticationInfo.user_id WHERE User.name = ?", authReq.User.Name).Scan(&dbAuthInfo.Password)
 	if err == sql.ErrNoRows {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
 		return
