@@ -10,145 +10,145 @@
 
 package openapi
 
-import (
-	"net/http"
-	"time"
+// import (
+// 	"net/http"
+// 	"time"
 
-	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
-)
+// 	"github.com/gin-contrib/cors"
+// 	"github.com/gin-gonic/gin"
+// )
 
-// Route is the information for every URI.
-type Route struct {
-	// Name is the name of this Route.
-	Name string
-	// Method is the string for the HTTP method. ex) GET, POST etc..
-	Method string
-	// Pattern is the pattern of the URI.
-	Pattern string
-	// HandlerFunc is the handler function of this route.
-	HandlerFunc gin.HandlerFunc
-}
+// // Route is the information for every URI.
+// type Route struct {
+// 	// Name is the name of this Route.
+// 	Name string
+// 	// Method is the string for the HTTP method. ex) GET, POST etc..
+// 	Method string
+// 	// Pattern is the pattern of the URI.
+// 	Pattern string
+// 	// HandlerFunc is the handler function of this route.
+// 	HandlerFunc gin.HandlerFunc
+// }
 
-// Routes is the list of the generated Route.
-type Routes []Route
+// // Routes is the list of the generated Route.
+// type Routes []Route
 
-// NewRouter returns a new router.
-func NewRouter() *gin.Engine {
-	router := gin.Default()
-	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"},
-		AllowMethods:     []string{"*"},
-		AllowHeaders:     []string{"*"},
-		ExposeHeaders:    []string{"*"},
-		AllowCredentials: true,
-		MaxAge:           12 * time.Hour,
-	}))
-	for _, route := range routes {
-		switch route.Method {
-		case http.MethodGet:
-			router.GET(route.Pattern, route.HandlerFunc)
-		case http.MethodPost:
-			router.POST(route.Pattern, route.HandlerFunc)
-		case http.MethodPut:
-			router.PUT(route.Pattern, route.HandlerFunc)
-		case http.MethodPatch:
-			router.PATCH(route.Pattern, route.HandlerFunc)
-		case http.MethodDelete:
-			router.DELETE(route.Pattern, route.HandlerFunc)
-		}
-	}
+// // NewRouter returns a new router.
+// func NewRouter() *gin.Engine {
+// 	router := gin.Default()
+// 	router.Use(cors.New(cors.Config{
+// 		AllowOrigins:     []string{"*"},
+// 		AllowMethods:     []string{"*"},
+// 		AllowHeaders:     []string{"*"},
+// 		ExposeHeaders:    []string{"*"},
+// 		AllowCredentials: true,
+// 		MaxAge:           12 * time.Hour,
+// 	}))
+// 	for _, route := range routes {
+// 		switch route.Method {
+// 		case http.MethodGet:
+// 			router.GET(route.Pattern, route.HandlerFunc)
+// 		case http.MethodPost:
+// 			router.POST(route.Pattern, route.HandlerFunc)
+// 		case http.MethodPut:
+// 			router.PUT(route.Pattern, route.HandlerFunc)
+// 		case http.MethodPatch:
+// 			router.PATCH(route.Pattern, route.HandlerFunc)
+// 		case http.MethodDelete:
+// 			router.DELETE(route.Pattern, route.HandlerFunc)
+// 		}
+// 	}
 
-	return router
-}
+// 	return router
+// }
 
-// Index is the index handler.
-func Index(c *gin.Context) {
-	c.String(http.StatusOK, "Hello World!")
-}
+// // Index is the index handler.
+// func Index(c *gin.Context) {
+// 	c.String(http.StatusOK, "Hello World!")
+// }
 
-var routes = Routes{
-	{
-		"Index",
-		http.MethodGet,
-		"/",
-		Index,
-	},
+// var routes = Routes{
+// 	{
+// 		"Index",
+// 		http.MethodGet,
+// 		"/",
+// 		Index,
+// 	},
 
-	{
-		"CreateAuthToken",
-		http.MethodPut,
-		"/authenticate",
-		CreateAuthToken,
-	},
+// 	{
+// 		"CreateAuthToken",
+// 		http.MethodPut,
+// 		"/authenticate",
+// 		CreateAuthToken,
+// 	},
 
-	{
-		"PackageByNameDelete",
-		http.MethodDelete,
-		"/package/byName/:name",
-		PackageByNameDelete,
-	},
+// 	{
+// 		"PackageByNameDelete",
+// 		http.MethodDelete,
+// 		"/package/byName/:name",
+// 		PackageByNameDelete,
+// 	},
 
-	{
-		"PackageByNameGet",
-		http.MethodGet,
-		"/package/byName/:name",
-		PackageByNameGet,
-	},
+// 	{
+// 		"PackageByNameGet",
+// 		http.MethodGet,
+// 		"/package/byName/:name",
+// 		PackageByNameGet,
+// 	},
 
-	{
-		"PackageByRegExGet",
-		http.MethodPost,
-		"/package/byRegEx",
-		PackageByRegExGet,
-	},
+// 	{
+// 		"PackageByRegExGet",
+// 		http.MethodPost,
+// 		"/package/byRegEx",
+// 		PackageByRegExGet,
+// 	},
 
-	{
-		"PackageCreate",
-		http.MethodPost,
-		"/package",
-		PackageCreate,
-	},
+// 	{
+// 		"PackageCreate",
+// 		http.MethodPost,
+// 		"/package",
+// 		PackageCreate,
+// 	},
 
-	{
-		"PackageDelete",
-		http.MethodDelete,
-		"/package/:id",
-		PackageDelete,
-	},
+// 	{
+// 		"PackageDelete",
+// 		http.MethodDelete,
+// 		"/package/:id",
+// 		PackageDelete,
+// 	},
 
-	{
-		"PackageRate",
-		http.MethodGet,
-		"/package/:id/rate",
-		PackageRate,
-	},
+// 	{
+// 		"PackageRate",
+// 		http.MethodGet,
+// 		"/package/:id/rate",
+// 		PackageRate,
+// 	},
 
-	{
-		"PackageRetrieve",
-		http.MethodGet,
-		"/package/:id",
-		PackageRetrieve,
-	},
+// 	{
+// 		"PackageRetrieve",
+// 		http.MethodGet,
+// 		"/package/:id",
+// 		PackageRetrieve,
+// 	},
 
-	{
-		"PackageUpdate",
-		http.MethodPut,
-		"/package/:id",
-		PackageUpdate,
-	},
+// 	{
+// 		"PackageUpdate",
+// 		http.MethodPut,
+// 		"/package/:id",
+// 		PackageUpdate,
+// 	},
 
-	{
-		"PackagesList",
-		http.MethodPost,
-		"/packages",
-		PackagesList,
-	},
+// 	{
+// 		"PackagesList",
+// 		http.MethodPost,
+// 		"/packages",
+// 		PackagesList,
+// 	},
 
-	{
-		"RegistryReset",
-		http.MethodDelete,
-		"/reset",
-		RegistryReset,
-	},
-}
+// 	{
+// 		"RegistryReset",
+// 		http.MethodDelete,
+// 		"/reset",
+// 		RegistryReset,
+// 	},
+// }

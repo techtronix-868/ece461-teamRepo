@@ -67,3 +67,4 @@ func TestPackageList(t *testing.T) {
 
 	assert.Equal(t, w.Code, http.StatusOK, "Error")
 }
+
