@@ -6,3 +6,5 @@ https://www.npmjs.com/package/browserify
 https://github.com/Roserot/test-task-app
 https://github.com/appfeel/jsobjects
 https://github.com/mabaums/ece461-web
+https://www.npmjs.com/package/even
+https://www.npmjs.com/package/evaljson

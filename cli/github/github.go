@@ -643,6 +643,7 @@ func scoreVersionPinning(dependencyVersionList []string) float64 {
 	return score
 }
 
+// Returns number of additions through code reviewed prs and number of additions through all prs
 func getEngineeringProcessData(owner string, name string) (int, int) {
 
 	type Data struct {
@@ -745,7 +746,7 @@ func Score(URL string) *nd.NdJson {
 	totAdditionsWithReview, totAdditions := getEngineeringProcessData(owner, repo)
 	engineeringProcess := scoreEngineeringProcess(totAdditionsWithReview, totAdditions)
 	//Update weights
-	overallScore = 0.4*responsiveness + 0.1*busFactor + 0.2*license + 0.1*rampUp + 0.2*correctness + 0.0*versionPinning + 0.0*engineeringProcess
+	overallScore = 0.05*responsiveness + 0.1*busFactor + 0.25*license + 0.1*rampUp + 0.05*correctness + 0.25*versionPinning + 0.2*engineeringProcess
 	lg.InfoLogger.Println("Finding overall score : ", overallScore)
 
 	nd := new(nd.NdJson)
