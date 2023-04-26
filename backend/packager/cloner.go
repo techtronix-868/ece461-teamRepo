@@ -39,7 +39,7 @@ func Clone(dir string, url string) error {
 	cmd := exec.Command("git", "clone", url, dir)
 	err := cmd.Run()
 	if err != nil {
-		log.Error("Error Cloning: %v in Dir: %v Err: %v", url, dir, err) // Maybe no need to be Fatal?
+		log.Errorf("Error Cloning: %v in Dir: %v Err: %v", url, dir, err) // Maybe no need to be Fatal?
 	}
 	return err
 }
