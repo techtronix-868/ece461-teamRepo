@@ -59,7 +59,7 @@ func PackageCreate(c *gin.Context) {
 		return
 	}
 
-	log.Infof("Creating Package, data: %+v", data)
+	log.Infof("REQUEST -- PackageCreate -- data: %+v", data)
 
 	//TODO: Implement actual package creation from URLs and/or Content (Extract metadata and data)
 	//--------------------------------------
@@ -171,26 +171,7 @@ func PackageCreate(c *gin.Context) {
 	}
 
 	// Insert PackageHistoryEntry
-	var User_temp models.User
-	User_temp.Name = c.GetString("username")
-	User_temp.IsAdmin = c.GetBool("admin")
-	packageHistoryEntry := models.PackageHistoryEntry{
-		User:            User_temp,
-		Date:            time.Now(),
-		PackageMetadata: metadata,
-		Action:          "CREATE",
-	}
-	var user_table_id int
-	err = db.QueryRow("SELECT User.id FROM User WHERE User.name= ?", User_temp.Name).Scan(&user_table_id)
-	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error9"})
-		return
-	}
-	result, err = db.Exec("INSERT INTO PackageHistoryEntry (user_id, date, package_metadata_id, action) VALUES (?, ?, ?, ?)", user_table_id, packageHistoryEntry.Date, metadataID, packageHistoryEntry.Action)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+	updatePackageHistory(c, int(metadataID), db, "CREATE")
 
 	// Successful Response
 	c.JSON(http.StatusCreated, gin.H{
@@ -217,6 +198,8 @@ func PackageUpdate(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
 	}
+
+	log.Infof("REQUEST -- PackageUpdate -- Package: %+v", pkg)
 
 	metadata := pkg.Metadata
 	var existingPackage models.Package
@@ -248,17 +231,23 @@ func PackageUpdate(c *gin.Context) {
 	}
 
 	// Insert PackageHistoryEntry
+	updatePackageHistory(c, package_metadata_id, db, "UPDATE")
+
+	c.JSON(http.StatusOK, gin.H{"description": "Version is updated"})
+}
+
+func updatePackageHistory(c *gin.Context, package_metadata_id int, db *sql.DB, action string) {
+
 	var User_temp models.User
 	User_temp.Name = c.GetString("username")
 	User_temp.IsAdmin = false
 	packageHistoryEntry := models.PackageHistoryEntry{
-		User:            User_temp,
-		Date:            time.Now(),
-		PackageMetadata: metadata,
-		Action:          "UPDATE",
+		User:   User_temp,
+		Date:   time.Now(),
+		Action: action,
 	}
 	var user_table_id int
-	err = db.QueryRow("SELECT user.id FROM User WHERE user.name= ?", User_temp.Name).Scan(&user_table_id)
+	err := db.QueryRow("SELECT User.id FROM User WHERE User.name= ?", User_temp.Name).Scan(&user_table_id)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error9"})
 		return
@@ -269,7 +258,6 @@ func PackageUpdate(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"description": "Version is updated"})
 }
 
 // PackageDelete - Delete this version of the package. given packageid
@@ -288,7 +276,7 @@ func PackageDelete(c *gin.Context) {
 	packageID := strings.TrimLeft(c.Param("id"), "/")
 	var metadataID int
 
-	log.Infof("Deleting packageID %v", packageID)
+	log.Infof("REQUEST -- Package Delete -- PackageID %v", packageID)
 
 	err := db.QueryRow("SELECT id FROM PackageMetadata WHERE PackageID = ?", packageID).Scan(&metadataID)
 
@@ -333,6 +321,7 @@ func PackageByNameDelete(c *gin.Context) {
 	}
 
 	packageName := strings.TrimLeft(c.Param("name"), "/")
+	log.Infof("REQUEST -- PackageByNameDelete -- %v", c.Param("name"))
 	// Get the metadata IDs of all packages with the given name
 	var metadataIDs []int
 	rows, err := db.Query("SELECT id FROM PackageMetadata WHERE Name = ?", packageName)
@@ -383,6 +372,8 @@ func PackageRetrieve(c *gin.Context) {
 	if !authenticate(c) {
 		return
 	}
+
+	log.Infof("REQUEST -- PackageRetrieve -- %v", c.Param("id"))
 
 	packageID := strings.TrimLeft(c.Param("id"), "/")
 
@@ -441,6 +432,8 @@ func PackageRetrieve(c *gin.Context) {
 		JSProgram: packageJSProgramS,
 	}
 
+	// updatePackageHistory(c, 0) need to update package history, find way to obtain from database
+
 	c.JSON(http.StatusOK, gin.H{
 		"metadata": metadata,
 		"data":     data,
@@ -458,6 +451,8 @@ func RegistryReset(c *gin.Context) {
 	if !authenticate(c) {
 		return
 	}
+
+	log.Infof("REQUEST -- RegistryReset")
 
 	// verify admin status
 
@@ -584,6 +579,8 @@ func PackagesList(c *gin.Context) {
 		return
 	}
 
+	log.Infof("REQUEST -- PackagesList -- Queries: %+v, Offset: %v", packageQueries, c.Query("offset"))
+
 	var nameConditions []string
 	for _, query := range packageQueries {
 		if query.Name != "" {
@@ -623,7 +620,11 @@ func PackagesList(c *gin.Context) {
 		packages = append(packages, p)
 	}
 
-	if len(packages) >= limit {
+	log.Infof("Packages retreived from db %+v", packages)
+
+	// TO FIX return offset header.
+	if len(packages) > limit {
+		log.Error("Too many packages returned")
 		c.AbortWithStatusJSON(413, gin.H{"description": "Too many packages returned."})
 		return
 	}
@@ -671,6 +672,7 @@ func PackageByRegExGet(c *gin.Context) {
 	// Parse the request body as a PackageRegEx object
 	var query PackageRegEx
 	err := c.ShouldBindJSON(&query)
+	log.Infof("REQUEST -- PackageByRegExGet -- %+v", query)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
@@ -710,6 +712,8 @@ func PackageByRegExGet(c *gin.Context) {
 // PackageRate -
 // historyentry
 func PackageRate(c *gin.Context) {
+	log.Infof("REQUEST -- PackageRate -- %v", c.Param("id"))
 	// var rating Rating
 	// c.JSON(http.StatusOK, ratings)
+
 }
