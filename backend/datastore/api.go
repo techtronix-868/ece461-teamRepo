@@ -17,6 +17,7 @@ import (
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/mabaums/ece461-web/backend/models"
+	"github.com/mabaums/ece461-web/backend/packager"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -61,21 +62,6 @@ func PackageCreate(c *gin.Context) {
 
 	log.Infof("REQUEST -- PackageCreate -- data: %+v", data)
 
-	//TODO: Implement actual package creation from URLs and/or Content (Extract metadata and data)
-	//--------------------------------------
-
-	// THIS IS TEMPORARY TO DEBUG REST OF API
-	name := "foo"
-	if len(data.URL) > 0 {
-		name_a := strings.Split(data.URL, "/")
-		name = name_a[len(name_a)-1]
-	}
-
-	metadata := models.PackageMetadata{
-		Name:    name,
-		Version: "1.0.0",
-	}
-
 	// Verify that only one of Content and URl are set
 	dataURLEmpty := len(data.URL) == 0
 	dataContentEmpty := len(data.Content) == 0
@@ -85,11 +71,27 @@ func PackageCreate(c *gin.Context) {
 		return
 	}
 
+	var metadata *models.PackageMetadata
+	var err error
+	// Implement packages with content.
+	if dataURLEmpty {
+		c.AbortWithStatus(http.StatusNotImplemented)
+		return
+	} else {
+		metadata, err = packager.GetPackageJson(data.URL)
+		if err != nil {
+			c.AbortWithStatus(http.StatusBadRequest) // Handle server errors.
+			return
+		}
+		log.Infof("Parsed package.json from %v, %+v", data.URL, metadata)
+	}
+
 	// Verify BOTH package name and version name are not the same. It's ok if package name is the same and versionis different.
 	var exists bool
-	err := db.QueryRow("SELECT * FROM PackageMetadata WHERE Name = ? AND Version = ?", metadata.Name, metadata.Version).Scan(&exists)
+	err = db.QueryRow("SELECT * FROM PackageMetadata WHERE Name = ? AND Version = ?", metadata.Name, metadata.Version).Scan(&exists)
 	if err != sql.ErrNoRows {
 		// row does not exist, return an error response
+		log.Infof("Found package with Name: %v, Version %v", metadata.Name, metadata.Version)
 		c.AbortWithStatusJSON(http.StatusConflict, gin.H{"description": "Package exists already"})
 		return
 	}
