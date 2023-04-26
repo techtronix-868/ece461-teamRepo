@@ -4,12 +4,17 @@ import (
 	git "app/git"
 	lg "app/lg"
 	nd "app/output"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
+
+	"github.com/machinebox/graphql"
 
 	maps "golang.org/x/exp/maps"
 )
@@ -31,6 +36,7 @@ type Connect_npm struct {
 	Homepage           string
 	CommitFreq         float64
 	ReleaseFreq        float64
+	RepoLink           string
 }
 
 type Package struct {
@@ -166,6 +172,8 @@ func (cn Connect_npm) Data(packageName string) *nd.NdJson {
 	cn.ReleaseFreq = pkg.Evaluation.Maintenance.ReleaseFreq
 	cn.CommitFreq = pkg.Evaluation.Maintenance.CommitFreq
 
+	cn.RepoLink = pkg.Collected.Metadata.Repository.URL
+
 	return cn.Score()
 }
 
@@ -178,9 +186,17 @@ func (cn Connect_npm) Score() *nd.NdJson {
 		}
 
 	}
-	overallScore := 0.4*cn.get_responsivnesss() + 0.1*cn.get_bus_factor() + 0.2*cn.get_License_score() + 0.1*cn.get_rampup_score() + 0.2*cn.get_correctness() + 0.0*cn.getDependencyVersionsScore()
+	responsiveness := cn.get_responsivnesss()
+	busFactor := cn.get_bus_factor()
+	license := cn.get_License_score()
+	rampup := cn.get_rampup_score()
+	correctness := cn.get_correctness()
+	dependencyVersions := cn.getDependencyVersionsScore()
+	engineeeringProcess := cn.getEngineeringProcessScore()
+	overallScore := 0.05*responsiveness + 0.1*busFactor + 0.25*license + 0.1*rampup + 0.05*correctness + 0.25*dependencyVersions + 0.2*engineeeringProcess
+	overallScore = math.Min(1.0, overallScore)
 	nd := new(nd.NdJson)
-	nd = nd.DataToNd(cn.URL, overallScore, cn.get_rampup_score(), cn.get_bus_factor(), cn.get_responsivnesss(), cn.get_correctness(), cn.get_License_score(), cn.getDependencyVersionsScore(), 0.0)
+	nd = nd.DataToNd(cn.URL, overallScore, rampup, busFactor, responsiveness, correctness, license, dependencyVersions, engineeeringProcess)
 	return nd
 }
 
@@ -205,11 +221,13 @@ func (cn Connect_npm) get_License_score() float64 {
 }
 
 func (cn Connect_npm) get_rampup_score() float64 {
-	return float64(cn.DevDeps) / float64(cn.Dependencies)
+	score := float64(cn.DevDeps) / float64(cn.Dependencies)
+	return math.Min(1.0, score)
 }
 
 func (cn Connect_npm) get_bus_factor() float64 {
-	return float64(cn.Maintainers) / float64(cn.Contributors)
+	score := float64(cn.Maintainers) / float64(cn.Contributors)
+	return math.Min(1.0, score)
 }
 
 func (cn Connect_npm) get_correctness() float64 {
@@ -237,8 +255,8 @@ func (cn Connect_npm) get_correctness() float64 {
 func (cn Connect_npm) get_responsivnesss() float64 {
 	// rf:=roundFloat(cn.ReleaseFreq,2)
 	// cf:=roundFloat(cn.CommitFreq,2)
-
-	return float64(cn.Releases) / float64(cn.Commits)
+	score := float64(cn.Releases) / float64(cn.Commits)
+	return math.Min(1.0, score)
 }
 
 func (cn Connect_npm) getDependencyVersionsScore() float64 {
@@ -264,7 +282,99 @@ func (cn Connect_npm) getDependencyVersionsScore() float64 {
 			}
 		}
 	}
-	score := numPinned / float64(numDependencies)
+	score := float64(numPinned) / float64(numDependencies)
 
 	return score
+}
+
+func (cn Connect_npm) getEngineeringProcessScore() float64 {
+
+	GithubLink := cn.RepoLink
+	parts := strings.Split(GithubLink, "/")
+
+	packageName := parts[len(parts)-1]
+	packageName = packageName[:len(packageName)-4]
+
+	owner := parts[len(parts)-2]
+
+	totAdditionsWithReview, totAdditions := getEngineeringProcessData(owner, packageName)
+
+	return scoreEngineeringProcess(totAdditionsWithReview, totAdditions)
+}
+
+// Returns number of additions through code reviewed prs and number of additions through all prs
+func getEngineeringProcessData(owner string, name string) (int, int) {
+	var GITHUB_TOKEN = os.Getenv("GITHUB_TOKEN")
+	type Data struct {
+		Repository struct {
+			PullRequests struct {
+				TotalCount int `json:"totalCount"`
+				Nodes      []struct {
+					ID        string `json:"id"`
+					Additions int    `json:"additions"`
+					Reviews   struct {
+						TotalCount int `json:"totalCount"`
+					} `json:"reviews"`
+				} `json:"nodes"`
+			} `json:"pullRequests"`
+		} `json:"repository"`
+	}
+
+	graphqlClient := graphql.NewClient("https://api.github.com/graphql")
+
+	graphqlRequest := graphql.NewRequest(`
+      query ($own: String!, $repo: String!)  {
+        repository(owner: $own, name: $repo) {
+          pullRequests(last: 100) {
+			totalCount
+            nodes {
+              id
+			  additions
+			  reviews(last: 100) {
+				totalCount
+			  }
+            }
+		  }
+        }
+      }
+    
+
+    `)
+
+	graphqlRequest.Var("own", owner)
+	graphqlRequest.Var("repo", name)
+
+	graphqlRequest.Header.Set("Authorization", "Bearer "+GITHUB_TOKEN)
+	graphqlRequest.Header.Set("Accept", "application/vnd.github.hawkgirl-preview+json")
+
+	var res Data
+
+	if err := graphqlClient.Run(context.Background(), graphqlRequest, &res); err != nil {
+		lg.ErrorLogger.Println("Unable to get engineering process data through GrpahQL API in github.go")
+		fmt.Println((err))
+		os.Exit(1)
+	}
+
+	totAdditions := 0
+	totAdditionsWithReview := 0
+	numPulls := len(res.Repository.PullRequests.Nodes)
+	for i := 0; i < numPulls; i++ {
+		currPullReq := res.Repository.PullRequests.Nodes[i]
+		reqAddtions := currPullReq.Additions
+		totAdditions += reqAddtions
+		if currPullReq.Reviews.TotalCount >= 1 {
+			totAdditionsWithReview += reqAddtions
+		}
+
+	}
+
+	return totAdditionsWithReview, totAdditions
+
+}
+
+func scoreEngineeringProcess(totAdditionsWithReview int, totAdditions int) float64 {
+	if totAdditions == 0 {
+		return 0.0
+	}
+	return float64(totAdditionsWithReview) / float64(totAdditions)
 }
