@@ -1,11 +1,16 @@
 package packager
 
 import (
+	"archive/zip"
 	"encoding/json"
+	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	b64 "encoding/base64"
 
 	"github.com/mabaums/ece461-web/backend/models"
 	log "github.com/sirupsen/logrus"
@@ -32,6 +37,60 @@ func GetPackageJson(url string) (*models.PackageMetadata, error) {
 	}
 
 	return ReadPackageJson(tempDir)
+}
+
+func zipEncodeDir(dir string) (string, error) {
+	file, err := os.Create("output.zip")
+	if err != nil {
+		log.Errorf("Error creating output.zip file")
+		return "", err
+	}
+
+	w := zip.NewWriter(file)
+
+	walker := func(path string, info os.FileInfo, err error) error {
+		fmt.Printf("Crawling: %#v\n", path)
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		file, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		// Ensure that `path` is not absolute; it should not start with "/".
+		// This snippet happens to work because I don't use
+		// absolute paths, but ensure your real-world code
+		// transforms path into a zip-root relative path.
+		f, err := w.Create(path)
+		if err != nil {
+			return err
+		}
+
+		_, err = io.Copy(f, file)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+	err = filepath.Walk(dir, walker)
+	if err != nil {
+		log.Errorf("Error walking and creating zip from file %v", err)
+		return "", err
+	}
+	bytes, err := os.ReadFile("output.zip")
+	if err != nil {
+		log.Errorf("Error reading output zip %v", err)
+		return "", err
+	}
+	sEnc := b64.StdEncoding.EncodeToString(bytes)
+	return sEnc, nil
+
 }
 
 func Clone(dir string, url string) error {

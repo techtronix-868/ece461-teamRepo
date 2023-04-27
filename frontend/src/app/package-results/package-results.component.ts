@@ -72,7 +72,7 @@ export class PackageResultsComponent implements OnInit {
       for (let i = 0; i < data.length; i++) {
         decodeData[i] = data.charCodeAt(i)
       }
-      const blob = new Blob(decodeData, { 
+      const blob = new Blob([new Uint8Array(decodeData)], { 
         type: 'application/zip'
       });
       const url = window.URL.createObjectURL(blob)
