@@ -1,0 +1,3 @@
+{"Content": "",
+ "URL":"https://github.com/text-mask/text-mask",
+ "JSProgram": "if (process.argv.length === 7) {\\nconsole.log('Success')\\nprocess.exit(0)\\n} else {\\nconsole.log('Failed')\\nprocess.exit(1)\\n}\\n"}

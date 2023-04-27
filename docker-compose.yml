@@ -1,12 +1,31 @@
 version: '3'
 services:
   backend:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend.dockerfile
     ports:
       - 8000:8000
+    depends_on:
+      - mysql
+    environment:
+      DB_PASS: ${DB_PASS}
+      DB_USER: root
+      DB_NAME: ECE461
+      DB_PORT: 3306
+      INSTANCE_HOST: mysql
+      SECRET_KEY: super_secret_key
   frontend:
     build: ./frontend
     ports:
       - 4200:80
     depends_on:
       - backend
+  mysql:
+    image: mysql:latest
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASS}
+    ports:
+      - 3306:3306
+    volumes:
+      - ./backend/datastore:/docker-entrypoint-initdb.d

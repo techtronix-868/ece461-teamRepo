@@ -1,3 +1,6 @@
+CREATE DATABASE ECE461;
+USE ECE461;
+
 CREATE TABLE PackageMetadata (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   Name VARCHAR(255),
@@ -62,3 +65,7 @@ CREATE TABLE PackageHistoryEntry (
   FOREIGN KEY (user_id) REFERENCES User(id),
   FOREIGN KEY (package_metadata_id) REFERENCES PackageMetadata(id)
 );
+
+-- Creating Admin foo, bar for testing
+INSERT INTO User (name, isAdmin) VALUES ("foo", True);
+INSERT INTO UserAuthenticationInfo (user_id, password) VALUES (1, "bar");

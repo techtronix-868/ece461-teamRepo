@@ -11,14 +11,16 @@
 package main
 
 import (
-
 	"os"
-  // "log"
-  log "github.com/sirupsen/logrus"
+
+	// "log"
 	"database/sql"
-	"github.com/joho/godotenv"
 	"fmt"
-  // "net/http"
+
+	"github.com/joho/godotenv"
+	log "github.com/sirupsen/logrus"
+
+	// "net/http"
 	sw "github.com/mabaums/ece461-web/backend/datastore"
 	// WARNING!
 	// Change this to a fully-qualified import path
@@ -31,18 +33,17 @@ import (
 )
 
 func main() {
-  log.Printf("Server started")
-	db, err := connectTCPSocket();
+	log.Printf("Server started")
+	db, err := connectTCPSocket()
 	if err != nil {
-		log.Fatal("Failed to connect to database");
+		log.Fatal("Failed to connect to database")
 	}
 	defer db.Close()
-	
+
 	router := sw.NewRouter(db)
-	router.SetTrustedProxies([]string{"192.168.1.1/16"})
-  log.Fatal(router.Run(":8000"))
-  
-  
+	router.SetTrustedProxies([]string{"192.168.1.1/16"}) // ????
+	log.Fatal(router.Run(":8000"))
+
 	log.SetLevel(log.DebugLevel)
 	log.SetOutput(os.Stderr)
 	log.Info("Server started")
@@ -54,22 +55,31 @@ func connectTCPSocket() (*sql.DB, error) {
 
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Print("Error loading .env file")
 	}
 	// Note: Saving credentials in environment variables is convenient, but not
 	// secure - consider a more secure solution such as
 	// Cloud Secret Manager (https://cloud.google.com/secret-manager) to help
 	// keep secrets safe.
 	var (
-		dbUser    = os.Getenv("DB_USER")       // e.g. 'my-db-user'
-		dbPwd     = os.Getenv("DB_PASS")       // e.g. 'my-db-password'
-		dbName    = os.Getenv("DB_NAME")       // e.g. 'my-database'
-		dbPort    = os.Getenv("DB_PORT")       // e.g. '3306'
-		dbTCPHost = os.Getenv("INSTANCE_HOST") // e.g. '127.0.0.1' ('172.17.0.1' if deployed to GAE Flex)
+		dbUser         = os.Getenv("DB_USER") // e.g. 'my-db-user'
+		dbPwd          = os.Getenv("DB_PASS") // e.g. 'my-db-password'
+		dbName         = os.Getenv("DB_NAME") // e.g. 'my-database'
+		dbPort         = os.Getenv("DB_PORT") // e.g. '3306'
+		unixSocketPath = os.Getenv("INSTANCE_UNIX_SOCKET")
+		dbTCPHost      = os.Getenv("INSTANCE_HOST") // e.g. '127.0.0.1' ('172.17.0.1' if deployed to GAE Flex)
 	)
 
-	dbURI := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true",
-		dbUser, dbPwd, dbTCPHost, dbPort, dbName)
+	log.Infof("DB_USER: %v\n DB_NAME: %v\nDB_PORT: %v\nINSTANCE_HOST: %v\n", dbUser, dbName, dbPort, unixSocketPath)
+
+	dbURI := ""
+	if len(unixSocketPath) > 0 {
+		dbURI = fmt.Sprintf("%s:%s@unix(%s)/%s?parseTime=true",
+			dbUser, dbPwd, unixSocketPath, dbName)
+	} else {
+		dbURI = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true",
+			dbUser, dbPwd, dbTCPHost, dbPort, dbName)
+	}
 
 	// dbPool is the pool of database connections.
 	dbPool, err := sql.Open("mysql", dbURI)
