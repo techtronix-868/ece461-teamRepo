@@ -31,12 +31,19 @@ func GetPackageJson(url string) (*models.PackageMetadata, string, error) {
 	defer os.RemoveAll(tempDir)
 
 	err = Clone(tempDir, url)
-
 	if err != nil {
 		return nil, "", err
 	}
+
 	metadata, err := ReadPackageJson(tempDir)
+	if err != nil {
+		return nil, "", err
+	}
+
 	encoded, err := zipEncodeDir(tempDir)
+	if err != nil {
+		return nil, "", err
+	}
 
 	// check for errors here.
 

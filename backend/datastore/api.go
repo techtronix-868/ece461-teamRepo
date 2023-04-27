@@ -3,11 +3,11 @@ package api
 // SECURITY CONCERN, AUTHENTICATION ISADMIN FIELD CAN BE SET BY USER
 import (
 	"database/sql"
+	"math/rand"
 
 	//"encoding/json"
 	// "errors"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
@@ -86,6 +86,7 @@ func PackageCreate(c *gin.Context) {
 		}
 		log.Infof("Parsed package.json from %v, %+v", data.URL, metadata)
 		log.Infof("Encoded zip file %v", encoded)
+		data.Content = encoded
 	}
 
 	// Verify BOTH package name and version name are not the same. It's ok if package name is the same and versionis different.
@@ -98,38 +99,15 @@ func PackageCreate(c *gin.Context) {
 		return
 	}
 
-	// Check Rating
-
-	// PackageMetadata
-	paramID := ""
-	count := 0
-
-	// Generate new ID if package ID already exists or if the id is not specified
-	if paramID == "" {
-		for {
-			rand.Seed(time.Now().UnixNano())
-			const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-			b := make([]byte, 6)
-			for i := range b {
-				b[i] = chars[rand.Intn(len(chars))]
-			}
-			newID := string(b)
-
-			err = db.QueryRow("SELECT COUNT(*) FROM PackageMetadata WHERE PackageID = ?", newID).Scan(&count)
-			if err != nil {
-				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error6"})
-				return
-			}
-			if count == 0 {
-				paramID = newID
-				break
-			}
-		}
+	metadata.ID = generatePackageID(db)
+	if metadata.ID == "" {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error6"})
+		return
 	}
-	metadata.ID = paramID
+
 	log.Infof("Generated package id: %v", metadata.ID)
 	// Insert PackageMetadata
-	result, err := db.Exec("INSERT INTO PackageMetadata (Name, Version, PackageID) VALUES (?, ?, ?)", metadata.Name, metadata.Version, paramID)
+	result, err := db.Exec("INSERT INTO PackageMetadata (Name, Version, PackageID) VALUES (?, ?, ?)", metadata.Name, metadata.Version, metadata.ID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusConflict, gin.H{"description": "Package exists already."})
 		return
@@ -140,31 +118,19 @@ func PackageCreate(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error7"})
 		return
 	}
+
 	log.Infof("MetadataID created %v", metadataID)
 	// Insert PackageData
 	var dataID int64
-	if dataURLEmpty {
-		result, err := db.Exec("INSERT INTO PackageData (Content, JSProgram) VALUES (?, ?)", data.Content, data.JSProgram)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error1"})
-			return
-		}
-		dataID, err = result.LastInsertId()
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error2"})
-			return
-		}
-	} else if dataContentEmpty {
-		result, err := db.Exec("INSERT INTO PackageData (URL, JSProgram) VALUES (?, ?)", data.URL, data.JSProgram)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error3"})
-			return
-		}
-		dataID, err = result.LastInsertId()
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error4"})
-			return
-		}
+	result, err = db.Exec("INSERT INTO PackageData (Content, JSProgram) VALUES (?, ?)", data.Content, data.JSProgram)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error1"})
+		return
+	}
+	dataID, err = result.LastInsertId()
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error2"})
+		return
 	}
 
 	// Insert Package
@@ -238,6 +204,32 @@ func PackageUpdate(c *gin.Context) {
 	updatePackageHistory(c, package_metadata_id, db, "UPDATE")
 
 	c.JSON(http.StatusOK, gin.H{"description": "Version is updated"})
+}
+
+func generatePackageID(db *sql.DB) string {
+	// Check Rating
+
+	// PackageMetadata
+	count := 0
+
+	// Generate new ID if package ID already exists or if the id is not specified
+	for {
+		rand.Seed(time.Now().UnixNano())
+		const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+		b := make([]byte, 6)
+		for i := range b {
+			b[i] = chars[rand.Intn(len(chars))]
+		}
+		newID := string(b)
+
+		err := db.QueryRow("SELECT COUNT(*) FROM PackageMetadata WHERE PackageID = ?", newID).Scan(&count)
+		if err != nil {
+			return ""
+		}
+		if count == 0 {
+			return newID
+		}
+	}
 }
 
 func updatePackageHistory(c *gin.Context, package_metadata_id int, db *sql.DB, action string) {
