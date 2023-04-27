@@ -94,12 +94,15 @@ func zipEncodeDir(dir string) (string, error) {
 		log.Errorf("Error walking and creating zip from file %v", err)
 		return "", err
 	}
+	w.Close()
+	file.Close()
 	bytes, err := os.ReadFile("output.zip")
 	if err != nil {
 		log.Errorf("Error reading output zip %v", err)
 		return "", err
 	}
 	sEnc := b64.StdEncoding.EncodeToString(bytes)
+	os.RemoveAll("output.zip")
 	return sEnc, nil
 
 }
