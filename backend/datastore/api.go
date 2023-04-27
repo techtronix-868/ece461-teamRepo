@@ -78,12 +78,13 @@ func PackageCreate(c *gin.Context) {
 		c.AbortWithStatus(http.StatusNotImplemented)
 		return
 	} else {
-		metadata, err = packager.GetPackageJson(data.URL)
+		metadata, encoded, err := packager.GetPackageJson(data.URL)
 		if err != nil {
 			c.AbortWithStatus(http.StatusBadRequest) // Handle server errors.
 			return
 		}
 		log.Infof("Parsed package.json from %v, %+v", data.URL, metadata)
+		log.Infof("Encoded zip file %v", encoded)
 	}
 
 	// Verify BOTH package name and version name are not the same. It's ok if package name is the same and versionis different.

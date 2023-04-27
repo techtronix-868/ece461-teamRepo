@@ -21,22 +21,26 @@ type PackageJSON struct {
 	Version string
 }
 
-func GetPackageJson(url string) (*models.PackageMetadata, error) {
+func GetPackageJson(url string) (*models.PackageMetadata, string, error) {
 	tempDir, err := os.MkdirTemp(".", "*")
 
 	if err != nil {
 		log.Errorf("Error creating temporary folder %v", err)
-		return nil, err
+		return nil, "", err
 	}
 	defer os.RemoveAll(tempDir)
 
 	err = Clone(tempDir, url)
 
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
+	metadata, err := ReadPackageJson(tempDir)
+	encoded, err := zipEncodeDir(tempDir)
 
-	return ReadPackageJson(tempDir)
+	// check for errors here.
+
+	return metadata, encoded, err
 }
 
 func zipEncodeDir(dir string) (string, error) {
