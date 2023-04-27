@@ -73,12 +73,13 @@ func PackageCreate(c *gin.Context) {
 
 	var metadata *models.PackageMetadata
 	var err error
+	var encoded string
 	// Implement packages with content.
 	if dataURLEmpty {
 		c.AbortWithStatus(http.StatusNotImplemented)
 		return
 	} else {
-		metadata, encoded, err := packager.GetPackageJson(data.URL)
+		metadata, encoded, err = packager.GetPackageJson(data.URL)
 		if err != nil {
 			c.AbortWithStatus(http.StatusBadRequest) // Handle server errors.
 			return
