@@ -665,8 +665,9 @@ func PackagesList(c *gin.Context) {
 			if clause != "" {
 				clause += " AND "
 			}
-			clause += "VERSION = ?"
-			params = append(params, query.Version)
+			vClause, vParams, _ := convertToBasicComparisons(query.Version)
+			clause += vClause
+			params = append(params, vParams...)
 		}
 		if clausesStr != "" {
 			clausesStr += " OR (" + clause + ")"
@@ -711,27 +712,32 @@ func PackagesList(c *gin.Context) {
 }
 
 // UTILITY FOR PACKAGESLIST
-func convertToBasicComparisons(v string) (string, error) {
+func convertToBasicComparisons(v string) (string, []interface{}, error) {
+	params := []interface{}{}
+	clauseStr := ""
 	if strings.HasPrefix(v, "^") {
 		vParsed := semver.MustParse(v[1:])
-		vMin := fmt.Sprintf(">= '%d.%d' ", vParsed.Major(), vParsed.Minor())
-		vMax := fmt.Sprintf("< '%d.%d' ", vParsed.Major()+1, 0)
-		return fmt.Sprintf("Version %s AND Version %s", vMin, vMax), nil
+		clauseStr += "Version >= ? AND Version < ?"
+		params = append(params, fmt.Sprintf("%d.%d", vParsed.Major(), vParsed.Minor()))
+		params = append(params, fmt.Sprintf("%d.%d", vParsed.Major()+1, 0))
 	} else if strings.HasPrefix(v, "~") {
 		vParsed := semver.MustParse(v[1:])
-		vMin := fmt.Sprintf(">= '%d.%d'", vParsed.Major(), vParsed.Minor())
-		vMax := fmt.Sprintf("< '%d.%d'", vParsed.Major(), vParsed.Minor()+1)
-		return fmt.Sprintf("Version %s AND Version %s", vMin, vMax), nil
+		clauseStr += "Version >= ? AND Version < ?"
+		params = append(params, fmt.Sprintf("%d.%d", vParsed.Major(), vParsed.Minor()))
+		params = append(params, fmt.Sprintf("%d.%d", vParsed.Major(), vParsed.Minor()+1))
 	} else if strings.Contains(v, "-") {
 		bounds := strings.Split(v, "-")
 		if len(bounds) != 2 {
-			return "", fmt.Errorf("invalid bounded range: %s", v)
+			return "", nil, fmt.Errorf("invalid bounded range: %s", v)
 		}
 		bounds[0] = strings.TrimSuffix(bounds[0], ".")
-		return fmt.Sprintf("Version >= '%s' AND Version < '%s'", bounds[0], bounds[1]), nil
+		params = append(params, bounds[0], bounds[1])
+		clauseStr += "Version >= ? AND Version < ?"
 	} else {
-		return fmt.Sprintf("Version = '%s'", v), nil
+		params = append(params, v)
+		clauseStr += "Version = ?"
 	}
+	return clauseStr, params, nil
 }
 
 // PackageByRegExGet - Get any packages fitting the regular expression.
