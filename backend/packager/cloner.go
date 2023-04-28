@@ -117,6 +117,48 @@ func Clone(dir string, url string) error {
 	return err
 }
 
+func Rate(url string) (*models.PackageRating, error) {
+	log.Infof("Rating pacakge %v", url)
+	f, err := os.CreateTemp(".", "*")
+	if err != nil {
+		log.Errorf("Error creating temporary file for rate. %v", err)
+		return nil, err
+	}
+	defer os.RemoveAll(f.Name())
+
+	_, err = f.WriteString(url)
+	if err != nil {
+		log.Errorf("Error writing string (%v) to temp file: %v Err: %v", url, f.Name(), err)
+		return nil, err
+	}
+	f.Close()
+	cmd := exec.Command("./cli", f.Name())
+	r_Bytes, err := cmd.Output()
+	if err != nil {
+		log.Errorf("Error obtaining output from command: %v", err)
+		return nil, err
+	}
+	var ratingMap map[string]interface{}
+	err = json.Unmarshal(r_Bytes, &ratingMap)
+	if err != nil {
+		log.Errorf("Error unmarshaling json: %v", err)
+	}
+
+	ratings := models.PackageRating{
+		RampUp:               ratingMap["RAMP_UP_SCORE"].(float64),
+		BusFactor:            ratingMap["BUS_FACTOR_SCORE"].(float64),
+		Correctness:          ratingMap["CORRECTNESS_SCORE"].(float64),
+		LicenseScore:         ratingMap["LICENSE_SCORE"].(float64),
+		NetScore:             ratingMap["NET_SCORE"].(float64),
+		ResponsiveMaintainer: ratingMap["RESPONSIVE_MAINTAINER_SCORE"].(float64),
+		GoodPinningPractice:  ratingMap["VERSION_PINNING_SCORE"].(float64),
+	}
+
+	fmt.Printf("%+v", ratings)
+
+	return &ratings, nil
+}
+
 func ReadPackageJson(dir string) (*models.PackageMetadata, error) {
 	log.Infof("Reading package.json in %v", dir)
 	var metadata models.PackageMetadata
@@ -144,5 +186,4 @@ func ReadPackageJson(dir string) (*models.PackageMetadata, error) {
 	}
 
 	return &metadata, nil
-
 }

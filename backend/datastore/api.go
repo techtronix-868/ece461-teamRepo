@@ -74,6 +74,7 @@ func PackageCreate(c *gin.Context) {
 	var metadata *models.PackageMetadata
 	var err error
 	var encoded string
+	var ratings *models.PackageRating
 	// Implement packages with content.
 	if dataURLEmpty {
 		c.AbortWithStatus(http.StatusNotImplemented)
@@ -87,6 +88,12 @@ func PackageCreate(c *gin.Context) {
 		log.Infof("Parsed package.json from %v, %+v", data.URL, metadata)
 		log.Infof("Encoded zip file %v", encoded)
 		data.Content = encoded
+
+		ratings, err = packager.Rate(data.URL)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"description": "Error rating package"})
+			return
+		}
 	}
 
 	// Verify BOTH package name and version name are not the same. It's ok if package name is the same and versionis different.
@@ -121,6 +128,7 @@ func PackageCreate(c *gin.Context) {
 
 	log.Infof("MetadataID created %v", metadataID)
 	// Insert PackageData
+
 	var dataID int64
 	result, err = db.Exec("INSERT INTO PackageData (Content, JSProgram) VALUES (?, ?)", data.Content, data.JSProgram)
 	if err != nil {
@@ -137,6 +145,15 @@ func PackageCreate(c *gin.Context) {
 	result, err = db.Exec("INSERT INTO Package (metadata_id, data_id) VALUES (?, ?)", metadataID, dataID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error8"})
+		return
+	}
+
+	packageID, err := result.LastInsertId()
+	result, err = db.Exec(`INSERT INTO PackageRating (package_id, BusFactor, Correctness, RampUp, ResponsiveMaintainer, LicenseScore, GoodPinningPractice)
+	VALUES (?, ?, ?, ?, ?, ?, ?)`, packageID, ratings.BusFactor, ratings.Correctness, ratings.RampUp, ratings.ResponsiveMaintainer, ratings.LicenseScore, ratings.GoodPinningPractice)
+	if err != nil {
+		log.Errorf("Error inserting rating %v", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"description": "Internal server error: Could not insert package rating into database."})
 		return
 	}
 
@@ -287,6 +304,16 @@ func PackageDelete(c *gin.Context) {
 	_, err = db.Exec("DELETE FROM PackageHistoryEntry WHERE package_metadata_id = ?", metadataID)
 	if err != nil {
 		log.Errorf("SQL error: Failed to delete from history: %v", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
+	}
+
+	var pkgID int
+	err = db.QueryRow("SELECT id FROM Package WHERE metadata_id = ?", metadataID).Scan(&pkgID)
+
+	_, err = db.Exec("DELETE FROM PackageRating WHERE package_id = ?", pkgID)
+	if err != nil {
+		log.Errorf("SQL error: Failed to delete from pacakge from package rating: %v", err)
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
 	}
@@ -458,7 +485,14 @@ func RegistryReset(c *gin.Context) {
 	}
 
 	// Delete all data from Package table
-	_, err := db.Exec("DELETE FROM Package")
+	_, err := db.Exec("DELETE FROM PackageRating")
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
+	}
+
+	// Delete all data from Package table
+	_, err = db.Exec("DELETE FROM Package")
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
