@@ -742,8 +742,48 @@ func PackageByRegExGet(c *gin.Context) {
 // PackageRate -
 // historyentry
 func PackageRate(c *gin.Context) {
-	log.Infof("REQUEST -- PackageRate -- %v", c.Param("id"))
-	// var rating Rating
-	// c.JSON(http.StatusOK, ratings)
+	// TODO INSERT INTO HISTORY THAT WE HAVE RATED
+	db, ok := getDB(c)
+	if !ok {
+		return
+	}
 
+	// Authentication
+	if !authenticate(c) {
+		return
+	}
+
+	log.Infof("REQUEST -- PackageRate -- %v", c.Param("id"))
+	pkgID := c.Param("id")
+	if pkgID == "" {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	rows, err := db.Query(`SELECT BusFactor, Correctness, RampUp, ResponsiveMaintainer, LicenseScore, GoodPinningPractice FROM PackageRating pr
+	WHERE pr.package_id = (SELECT id FROM Package WHERE metadata_id = (SELECT id FROM PackageMetadata WHERE PackageID = ?))`, pkgID)
+
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var pkgRating models.PackageRating
+		err := rows.Scan(&pkgRating.BusFactor, &pkgRating.Correctness, &pkgRating.RampUp, &pkgRating.ResponsiveMaintainer, &pkgRating.LicenseScore, &pkgRating.GoodPinningPractice)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+			return
+		}
+
+		c.JSON(http.StatusOK, pkgRating)
+		return
+	}
+	if err := rows.Err(); err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+
+	c.AbortWithStatus(http.StatusNotFound)
 }

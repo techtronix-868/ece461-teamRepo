@@ -10,6 +10,7 @@ services:
       - mysql
     environment:
       DB_PASS: ${DB_PASS}
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
       DB_USER: root
       DB_NAME: ECE461
       DB_PORT: 3306
