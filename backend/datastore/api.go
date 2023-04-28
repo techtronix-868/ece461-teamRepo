@@ -192,12 +192,13 @@ func PackageUpdate(c *gin.Context) {
 	var existingPackage models.Package
 	var package_data_id int
 	var package_metadata_id int
+	var package_id int
 
-	err := db.QueryRow("SELECT p.data_id, pmd.id, pmd.Name, pmd.Version, pmd.PackageID "+
+	err := db.QueryRow("SELECT p.id, p.data_id, pmd.id, pmd.Name, pmd.Version, pmd.PackageID "+
 		"FROM Package p "+
 		"JOIN PackageMetadata pmd ON p.metadata_id = pmd.id "+
 		"WHERE pmd.Name = ? AND pmd.Version = ? AND pmd.PackageID = ?",
-		metadata.Name, metadata.Version, metadata.ID).Scan(
+		metadata.Name, metadata.Version, metadata.ID).Scan(&package_id,
 		&package_data_id, &package_metadata_id, &existingPackage.Metadata.Name, &existingPackage.Metadata.Version, &existingPackage.Metadata.ID,
 	)
 	if err == sql.ErrNoRows {
@@ -207,13 +208,39 @@ func PackageUpdate(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
 	}
+	haveURL := len(pkg.Data.URL) != 0
+	var ratings *models.PackageRating
 
+	if haveURL {
+		metadata, encoded, err := packager.GetPackageJson(pkg.Data.URL)
+		if err != nil {
+			c.AbortWithStatus(http.StatusBadRequest) // Handle server errors.
+			return
+		}
+		log.Infof("Parsed package.json from %v, %+v", pkg.Data.URL, metadata)
+		log.Infof("Encoded zip file %v", encoded)
+		pkg.Data.Content = encoded
+
+		ratings, err = packager.Rate(pkg.Data.URL)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"description": "Error rating package"})
+			return
+		}
+	}
 	// Update package data
 	packageData := pkg.Data
-	_, err = db.Exec("UPDATE PackageData pd SET Content = ?, URL = ?, JSProgram = ? WHERE pd.id = ? ",
-		packageData.Content, packageData.URL, packageData.JSProgram, package_data_id)
+	_, err = db.Exec("UPDATE PackageData pd SET Content = ?, JSProgram = ? WHERE pd.id = ? ",
+		packageData.Content, packageData.JSProgram, package_data_id)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
+	}
+
+	_, err = db.Exec(`UPDATE PackageRating pr SET BusFactor = ?, Correctness = ?, RampUp = ?, ResponsiveMaintainer = ?, LicenseScore = ?, GoodPinningPractice = ? WHERE pr.package_id = ?`,
+		ratings.BusFactor, ratings.Correctness, ratings.RampUp, ratings.ResponsiveMaintainer, ratings.LicenseScore, ratings.GoodPinningPractice, package_id)
+	if err != nil {
+		log.Errorf("Error inserting rating %v", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"description": "Internal server error: Could not insert package rating into database."})
 		return
 	}
 
@@ -367,6 +394,16 @@ func PackageByNameDelete(c *gin.Context) {
 	for _, metadataID := range metadataIDs {
 		_, err = db.Exec("DELETE FROM PackageHistoryEntry WHERE package_metadata_id = ?", metadataID)
 		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+			return
+		}
+
+		var pkgID int
+		err = db.QueryRow("SELECT id FROM Package WHERE metadata_id = ?", metadataID).Scan(&pkgID)
+
+		_, err = db.Exec("DELETE FROM PackageRating WHERE package_id = ?", pkgID)
+		if err != nil {
+			log.Errorf("SQL error: Failed to delete from pacakge from package rating: %v", err)
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 			return
 		}
@@ -595,6 +632,7 @@ func PackagesList(c *gin.Context) {
 	if err != nil {
 		limit = 10 // default limit
 	}
+
 	offsetStr := c.Query("offset")
 	offset, err := strconv.Atoi(offsetStr)
 	if err != nil {
@@ -611,31 +649,42 @@ func PackagesList(c *gin.Context) {
 
 	log.Infof("REQUEST -- PackagesList -- Queries: %+v, Offset: %v", packageQueries, c.Query("offset"))
 
-	var nameConditions []string
+	queryStr := "SELECT * FROM PackageMetadata"
+	clausesStr := ""
+	params := []interface{}{}
 	for _, query := range packageQueries {
-		if query.Name != "" {
-			nameConditions = append(nameConditions, fmt.Sprintf("'%s'", query.Name))
+		clause := ""
+		if query.Name != "" && query.Name != "*" {
+			clause += "NAME = ?"
+			params = append(params, query.Name)
 		}
-	}
-
-	var rangeConditions []string
-	for _, query := range packageQueries {
-		if query.Version == "" {
-			rangeConditions = append(rangeConditions, "Version IS NOT NULL")
-		} else {
-			r, err := convertToBasicComparisons(query.Version)
-			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-				return
+		if query.Name == "*" {
+			clause += "NAME LIKE '%'"
+		}
+		if query.Version != "" {
+			if clause != "" {
+				clause += " AND "
 			}
-			rangeConditions = append(rangeConditions, r)
+			clause += "VERSION = ?"
+			params = append(params, query.Version)
+		}
+		if clausesStr != "" {
+			clausesStr += " OR (" + clause + ")"
+		} else {
+			clausesStr += "(" + clause + ")"
 		}
 	}
-	queryStr := fmt.Sprintf("SELECT * FROM PackageMetadata WHERE Name = %s AND Version REGEXP '^[^.]+\\.[^.]+\\.[^.]+$' AND  %s LIMIT %d OFFSET %d;", strings.Join(nameConditions, ","), strings.Join(rangeConditions, " AND "), limit, offset)
+	if clausesStr != "" {
+		queryStr += " WHERE " + clausesStr
+	}
+	queryStr += fmt.Sprintf(" LIMIT ? OFFSET ?")
+	params = append(params, limit)
+	params = append(params, offset)
+	//queryStr := fmt.Sprintf("SELECT * FROM PackageMetadata WHERE Name = %s AND Version REGEXP '^[^.]+\\.[^.]+\\.[^.]+$' AND  %s LIMIT %d OFFSET %d;", strings.Join(nameConditions, ","), strings.Join(rangeConditions, " AND "), limit, offset)
 	// fmt.Print(queryStr)
 	log.Infof("Querying DB %v", queryStr)
 
-	rows, err := db.Query(queryStr)
+	rows, err := db.Query(queryStr, params...)
 	if err != nil {
 		panic(err)
 	}
@@ -653,10 +702,9 @@ func PackagesList(c *gin.Context) {
 	log.Infof("Packages retreived from db %+v", packages)
 
 	// TO FIX return offset header.
-	if len(packages) > limit {
-		log.Error("Too many packages returned")
-		c.AbortWithStatusJSON(413, gin.H{"description": "Too many packages returned."})
-		return
+	if len(packages) == limit {
+		log.Infof("Returned 10 packages, could be more.")
+		c.Header("offset", strconv.Itoa(offset+limit))
 	}
 
 	c.JSON(http.StatusOK, packages)
