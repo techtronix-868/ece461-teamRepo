@@ -96,6 +96,12 @@ func PackageCreate(c *gin.Context) {
 		}
 	}
 
+	if !isGoodRating(ratings) {
+		log.Infof("Pcakge has bad ratings. Ratings: %+v Pkg: %v", ratings, metadata.Name)
+		c.AbortWithStatus(http.StatusFailedDependency)
+		return
+	}
+
 	// Verify BOTH package name and version name are not the same. It's ok if package name is the same and versionis different.
 	var exists bool
 	err = db.QueryRow("SELECT * FROM PackageMetadata WHERE Name = ? AND Version = ?", metadata.Name, metadata.Version).Scan(&exists)
@@ -840,4 +846,8 @@ func PackageRate(c *gin.Context) {
 	}
 
 	c.AbortWithStatus(http.StatusNotFound)
+}
+
+func isGoodRating(pkgRating *models.PackageRating) bool {
+	return pkgRating.LicenseScore >= 0.5
 }
