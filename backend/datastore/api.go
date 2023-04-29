@@ -3,11 +3,11 @@ package api
 // SECURITY CONCERN, AUTHENTICATION ISADMIN FIELD CAN BE SET BY USER
 import (
 	"database/sql"
+	"math/rand"
 
 	//"encoding/json"
 	// "errors"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
@@ -73,17 +73,27 @@ func PackageCreate(c *gin.Context) {
 
 	var metadata *models.PackageMetadata
 	var err error
+	var encoded string
+	var ratings *models.PackageRating
 	// Implement packages with content.
 	if dataURLEmpty {
 		c.AbortWithStatus(http.StatusNotImplemented)
 		return
 	} else {
-		metadata, err = packager.GetPackageJson(data.URL)
+		metadata, encoded, err = packager.GetPackageJson(data.URL)
 		if err != nil {
 			c.AbortWithStatus(http.StatusBadRequest) // Handle server errors.
 			return
 		}
 		log.Infof("Parsed package.json from %v, %+v", data.URL, metadata)
+		log.Infof("Encoded zip file %v", encoded)
+		data.Content = encoded
+
+		ratings, err = packager.Rate(data.URL)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"description": "Error rating package"})
+			return
+		}
 	}
 
 	// Verify BOTH package name and version name are not the same. It's ok if package name is the same and versionis different.
@@ -96,38 +106,15 @@ func PackageCreate(c *gin.Context) {
 		return
 	}
 
-	// Check Rating
-
-	// PackageMetadata
-	paramID := ""
-	count := 0
-
-	// Generate new ID if package ID already exists or if the id is not specified
-	if paramID == "" {
-		for {
-			rand.Seed(time.Now().UnixNano())
-			const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-			b := make([]byte, 6)
-			for i := range b {
-				b[i] = chars[rand.Intn(len(chars))]
-			}
-			newID := string(b)
-
-			err = db.QueryRow("SELECT COUNT(*) FROM PackageMetadata WHERE PackageID = ?", newID).Scan(&count)
-			if err != nil {
-				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error6"})
-				return
-			}
-			if count == 0 {
-				paramID = newID
-				break
-			}
-		}
+	metadata.ID = generatePackageID(db)
+	if metadata.ID == "" {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error6"})
+		return
 	}
-	metadata.ID = paramID
+
 	log.Infof("Generated package id: %v", metadata.ID)
 	// Insert PackageMetadata
-	result, err := db.Exec("INSERT INTO PackageMetadata (Name, Version, PackageID) VALUES (?, ?, ?)", metadata.Name, metadata.Version, paramID)
+	result, err := db.Exec("INSERT INTO PackageMetadata (Name, Version, PackageID) VALUES (?, ?, ?)", metadata.Name, metadata.Version, metadata.ID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusConflict, gin.H{"description": "Package exists already."})
 		return
@@ -138,37 +125,35 @@ func PackageCreate(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error7"})
 		return
 	}
+
 	log.Infof("MetadataID created %v", metadataID)
 	// Insert PackageData
+
 	var dataID int64
-	if dataURLEmpty {
-		result, err := db.Exec("INSERT INTO PackageData (Content, JSProgram) VALUES (?, ?)", data.Content, data.JSProgram)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error1"})
-			return
-		}
-		dataID, err = result.LastInsertId()
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error2"})
-			return
-		}
-	} else if dataContentEmpty {
-		result, err := db.Exec("INSERT INTO PackageData (URL, JSProgram) VALUES (?, ?)", data.URL, data.JSProgram)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error3"})
-			return
-		}
-		dataID, err = result.LastInsertId()
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error4"})
-			return
-		}
+	result, err = db.Exec("INSERT INTO PackageData (Content, JSProgram) VALUES (?, ?)", data.Content, data.JSProgram)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error1"})
+		return
+	}
+	dataID, err = result.LastInsertId()
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error2"})
+		return
 	}
 
 	// Insert Package
 	result, err = db.Exec("INSERT INTO Package (metadata_id, data_id) VALUES (?, ?)", metadataID, dataID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error8"})
+		return
+	}
+
+	packageID, err := result.LastInsertId()
+	result, err = db.Exec(`INSERT INTO PackageRating (package_id, BusFactor, Correctness, RampUp, ResponsiveMaintainer, LicenseScore, GoodPinningPractice)
+	VALUES (?, ?, ?, ?, ?, ?, ?)`, packageID, ratings.BusFactor, ratings.Correctness, ratings.RampUp, ratings.ResponsiveMaintainer, ratings.LicenseScore, ratings.GoodPinningPractice)
+	if err != nil {
+		log.Errorf("Error inserting rating %v", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"description": "Internal server error: Could not insert package rating into database."})
 		return
 	}
 
@@ -207,12 +192,13 @@ func PackageUpdate(c *gin.Context) {
 	var existingPackage models.Package
 	var package_data_id int
 	var package_metadata_id int
+	var package_id int
 
-	err := db.QueryRow("SELECT p.data_id, pmd.id, pmd.Name, pmd.Version, pmd.PackageID "+
+	err := db.QueryRow("SELECT p.id, p.data_id, pmd.id, pmd.Name, pmd.Version, pmd.PackageID "+
 		"FROM Package p "+
 		"JOIN PackageMetadata pmd ON p.metadata_id = pmd.id "+
 		"WHERE pmd.Name = ? AND pmd.Version = ? AND pmd.PackageID = ?",
-		metadata.Name, metadata.Version, metadata.ID).Scan(
+		metadata.Name, metadata.Version, metadata.ID).Scan(&package_id,
 		&package_data_id, &package_metadata_id, &existingPackage.Metadata.Name, &existingPackage.Metadata.Version, &existingPackage.Metadata.ID,
 	)
 	if err == sql.ErrNoRows {
@@ -222,13 +208,39 @@ func PackageUpdate(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
 	}
+	haveURL := len(pkg.Data.URL) != 0
+	var ratings *models.PackageRating
 
+	if haveURL {
+		metadata, encoded, err := packager.GetPackageJson(pkg.Data.URL)
+		if err != nil {
+			c.AbortWithStatus(http.StatusBadRequest) // Handle server errors.
+			return
+		}
+		log.Infof("Parsed package.json from %v, %+v", pkg.Data.URL, metadata)
+		log.Infof("Encoded zip file %v", encoded)
+		pkg.Data.Content = encoded
+
+		ratings, err = packager.Rate(pkg.Data.URL)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"description": "Error rating package"})
+			return
+		}
+	}
 	// Update package data
 	packageData := pkg.Data
-	_, err = db.Exec("UPDATE PackageData pd SET Content = ?, URL = ?, JSProgram = ? WHERE pd.id = ? ",
-		packageData.Content, packageData.URL, packageData.JSProgram, package_data_id)
+	_, err = db.Exec("UPDATE PackageData pd SET Content = ?, JSProgram = ? WHERE pd.id = ? ",
+		packageData.Content, packageData.JSProgram, package_data_id)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
+	}
+
+	_, err = db.Exec(`UPDATE PackageRating pr SET BusFactor = ?, Correctness = ?, RampUp = ?, ResponsiveMaintainer = ?, LicenseScore = ?, GoodPinningPractice = ? WHERE pr.package_id = ?`,
+		ratings.BusFactor, ratings.Correctness, ratings.RampUp, ratings.ResponsiveMaintainer, ratings.LicenseScore, ratings.GoodPinningPractice, package_id)
+	if err != nil {
+		log.Errorf("Error inserting rating %v", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"description": "Internal server error: Could not insert package rating into database."})
 		return
 	}
 
@@ -236,6 +248,32 @@ func PackageUpdate(c *gin.Context) {
 	updatePackageHistory(c, package_metadata_id, db, "UPDATE")
 
 	c.JSON(http.StatusOK, gin.H{"description": "Version is updated"})
+}
+
+func generatePackageID(db *sql.DB) string {
+	// Check Rating
+
+	// PackageMetadata
+	count := 0
+
+	// Generate new ID if package ID already exists or if the id is not specified
+	for {
+		rand.Seed(time.Now().UnixNano())
+		const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+		b := make([]byte, 6)
+		for i := range b {
+			b[i] = chars[rand.Intn(len(chars))]
+		}
+		newID := string(b)
+
+		err := db.QueryRow("SELECT COUNT(*) FROM PackageMetadata WHERE PackageID = ?", newID).Scan(&count)
+		if err != nil {
+			return ""
+		}
+		if count == 0 {
+			return newID
+		}
+	}
 }
 
 func updatePackageHistory(c *gin.Context, package_metadata_id int, db *sql.DB, action string) {
@@ -297,6 +335,16 @@ func PackageDelete(c *gin.Context) {
 		return
 	}
 
+	var pkgID int
+	err = db.QueryRow("SELECT id FROM Package WHERE metadata_id = ?", metadataID).Scan(&pkgID)
+
+	_, err = db.Exec("DELETE FROM PackageRating WHERE package_id = ?", pkgID)
+	if err != nil {
+		log.Errorf("SQL error: Failed to delete from pacakge from package rating: %v", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
+	}
+
 	_, err = db.Exec("DELETE  pmd, pd, p FROM Package p "+
 		"LEFT JOIN PackageMetadata pmd ON p.metadata_id = pmd.id "+
 		"LEFT JOIN PackageData pd ON p.data_id = pd.id "+
@@ -346,6 +394,16 @@ func PackageByNameDelete(c *gin.Context) {
 	for _, metadataID := range metadataIDs {
 		_, err = db.Exec("DELETE FROM PackageHistoryEntry WHERE package_metadata_id = ?", metadataID)
 		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+			return
+		}
+
+		var pkgID int
+		err = db.QueryRow("SELECT id FROM Package WHERE metadata_id = ?", metadataID).Scan(&pkgID)
+
+		_, err = db.Exec("DELETE FROM PackageRating WHERE package_id = ?", pkgID)
+		if err != nil {
+			log.Errorf("SQL error: Failed to delete from pacakge from package rating: %v", err)
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 			return
 		}
@@ -464,7 +522,14 @@ func RegistryReset(c *gin.Context) {
 	}
 
 	// Delete all data from Package table
-	_, err := db.Exec("DELETE FROM Package")
+	_, err := db.Exec("DELETE FROM PackageRating")
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
+	}
+
+	// Delete all data from Package table
+	_, err = db.Exec("DELETE FROM Package")
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
@@ -567,6 +632,7 @@ func PackagesList(c *gin.Context) {
 	if err != nil {
 		limit = 10 // default limit
 	}
+
 	offsetStr := c.Query("offset")
 	offset, err := strconv.Atoi(offsetStr)
 	if err != nil {
@@ -583,31 +649,43 @@ func PackagesList(c *gin.Context) {
 
 	log.Infof("REQUEST -- PackagesList -- Queries: %+v, Offset: %v", packageQueries, c.Query("offset"))
 
-	var nameConditions []string
+	queryStr := "SELECT * FROM PackageMetadata"
+	clausesStr := ""
+	params := []interface{}{}
 	for _, query := range packageQueries {
-		if query.Name != "" {
-			nameConditions = append(nameConditions, fmt.Sprintf("'%s'", query.Name))
+		clause := ""
+		if query.Name != "" && query.Name != "*" {
+			clause += "NAME = ?"
+			params = append(params, query.Name)
 		}
-	}
-
-	var rangeConditions []string
-	for _, query := range packageQueries {
-		if query.Version == "" {
-			rangeConditions = append(rangeConditions, "Version IS NOT NULL")
-		} else {
-			r, err := convertToBasicComparisons(query.Version)
-			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-				return
+		if query.Name == "*" {
+			clause += "NAME LIKE '%'"
+		}
+		if query.Version != "" {
+			if clause != "" {
+				clause += " AND "
 			}
-			rangeConditions = append(rangeConditions, r)
+			vClause, vParams, _ := convertToBasicComparisons(query.Version)
+			clause += vClause
+			params = append(params, vParams...)
+		}
+		if clausesStr != "" {
+			clausesStr += " OR (" + clause + ")"
+		} else {
+			clausesStr += "(" + clause + ")"
 		}
 	}
-	queryStr := fmt.Sprintf("SELECT * FROM PackageMetadata WHERE Name = %s AND Version REGEXP '^[^.]+\\.[^.]+\\.[^.]+$' AND  %s LIMIT %d OFFSET %d;", strings.Join(nameConditions, ","), strings.Join(rangeConditions, " AND "), limit, offset)
+	if clausesStr != "" {
+		queryStr += " WHERE " + clausesStr
+	}
+	queryStr += fmt.Sprintf(" LIMIT ? OFFSET ?")
+	params = append(params, limit)
+	params = append(params, offset)
+	//queryStr := fmt.Sprintf("SELECT * FROM PackageMetadata WHERE Name = %s AND Version REGEXP '^[^.]+\\.[^.]+\\.[^.]+$' AND  %s LIMIT %d OFFSET %d;", strings.Join(nameConditions, ","), strings.Join(rangeConditions, " AND "), limit, offset)
 	// fmt.Print(queryStr)
 	log.Infof("Querying DB %v", queryStr)
 
-	rows, err := db.Query(queryStr)
+	rows, err := db.Query(queryStr, params...)
 	if err != nil {
 		panic(err)
 	}
@@ -625,37 +703,41 @@ func PackagesList(c *gin.Context) {
 	log.Infof("Packages retreived from db %+v", packages)
 
 	// TO FIX return offset header.
-	if len(packages) > limit {
-		log.Error("Too many packages returned")
-		c.AbortWithStatusJSON(413, gin.H{"description": "Too many packages returned."})
-		return
+	if len(packages) == limit {
+		log.Infof("Returned 10 packages, could be more.")
+		c.Header("offset", strconv.Itoa(offset+limit))
 	}
 
 	c.JSON(http.StatusOK, packages)
 }
 
 // UTILITY FOR PACKAGESLIST
-func convertToBasicComparisons(v string) (string, error) {
+func convertToBasicComparisons(v string) (string, []interface{}, error) {
+	params := []interface{}{}
+	clauseStr := ""
 	if strings.HasPrefix(v, "^") {
 		vParsed := semver.MustParse(v[1:])
-		vMin := fmt.Sprintf(">= '%d.%d' ", vParsed.Major(), vParsed.Minor())
-		vMax := fmt.Sprintf("< '%d.%d' ", vParsed.Major()+1, 0)
-		return fmt.Sprintf("Version %s AND Version %s", vMin, vMax), nil
+		clauseStr += "Version >= ? AND Version < ?"
+		params = append(params, fmt.Sprintf("%d.%d", vParsed.Major(), vParsed.Minor()))
+		params = append(params, fmt.Sprintf("%d.%d", vParsed.Major()+1, 0))
 	} else if strings.HasPrefix(v, "~") {
 		vParsed := semver.MustParse(v[1:])
-		vMin := fmt.Sprintf(">= '%d.%d'", vParsed.Major(), vParsed.Minor())
-		vMax := fmt.Sprintf("< '%d.%d'", vParsed.Major(), vParsed.Minor()+1)
-		return fmt.Sprintf("Version %s AND Version %s", vMin, vMax), nil
+		clauseStr += "Version >= ? AND Version < ?"
+		params = append(params, fmt.Sprintf("%d.%d", vParsed.Major(), vParsed.Minor()))
+		params = append(params, fmt.Sprintf("%d.%d", vParsed.Major(), vParsed.Minor()+1))
 	} else if strings.Contains(v, "-") {
 		bounds := strings.Split(v, "-")
 		if len(bounds) != 2 {
-			return "", fmt.Errorf("invalid bounded range: %s", v)
+			return "", nil, fmt.Errorf("invalid bounded range: %s", v)
 		}
 		bounds[0] = strings.TrimSuffix(bounds[0], ".")
-		return fmt.Sprintf("Version >= '%s' AND Version < '%s'", bounds[0], bounds[1]), nil
+		params = append(params, bounds[0], bounds[1])
+		clauseStr += "Version >= ? AND Version < ?"
 	} else {
-		return fmt.Sprintf("Version = '%s'", v), nil
+		params = append(params, v)
+		clauseStr += "Version = ?"
 	}
+	return clauseStr, params, nil
 }
 
 // PackageByRegExGet - Get any packages fitting the regular expression.
@@ -714,8 +796,48 @@ func PackageByRegExGet(c *gin.Context) {
 // PackageRate -
 // historyentry
 func PackageRate(c *gin.Context) {
-	log.Infof("REQUEST -- PackageRate -- %v", c.Param("id"))
-	// var rating Rating
-	// c.JSON(http.StatusOK, ratings)
+	// TODO INSERT INTO HISTORY THAT WE HAVE RATED
+	db, ok := getDB(c)
+	if !ok {
+		return
+	}
 
+	// Authentication
+	if !authenticate(c) {
+		return
+	}
+
+	log.Infof("REQUEST -- PackageRate -- %v", c.Param("id"))
+	pkgID := c.Param("id")
+	if pkgID == "" {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	rows, err := db.Query(`SELECT BusFactor, Correctness, RampUp, ResponsiveMaintainer, LicenseScore, GoodPinningPractice FROM PackageRating pr
+	WHERE pr.package_id = (SELECT id FROM Package WHERE metadata_id = (SELECT id FROM PackageMetadata WHERE PackageID = ?))`, pkgID)
+
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var pkgRating models.PackageRating
+		err := rows.Scan(&pkgRating.BusFactor, &pkgRating.Correctness, &pkgRating.RampUp, &pkgRating.ResponsiveMaintainer, &pkgRating.LicenseScore, &pkgRating.GoodPinningPractice)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+			return
+		}
+
+		c.JSON(http.StatusOK, pkgRating)
+		return
+	}
+	if err := rows.Err(); err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+
+	c.AbortWithStatus(http.StatusNotFound)
 }

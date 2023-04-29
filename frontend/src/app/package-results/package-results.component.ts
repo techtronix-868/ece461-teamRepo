@@ -27,10 +27,8 @@ export class PackageResultsComponent implements OnInit {
   searchByNameVersion() {
     this._snackbar.open("Searching...", "ok", )
     var query:PackageQuery
-    if (this.name && this.version) {
-      query = {Name: this.name, Version: this.version}
-    } else if (this.name) {
-      query = {Name: this.name}
+    if (this.name || this.version) {
+      query = {Name: this.name!, Version: this.version}
     } else {
       query = {Name: "*"}
     }
@@ -72,7 +70,7 @@ export class PackageResultsComponent implements OnInit {
       for (let i = 0; i < data.length; i++) {
         decodeData[i] = data.charCodeAt(i)
       }
-      const blob = new Blob(decodeData, { 
+      const blob = new Blob([new Uint8Array(decodeData)], { 
         type: 'application/zip'
       });
       const url = window.URL.createObjectURL(blob)
