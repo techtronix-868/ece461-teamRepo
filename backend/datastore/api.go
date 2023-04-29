@@ -73,14 +73,27 @@ func PackageCreate(c *gin.Context) {
 
 	var metadata *models.PackageMetadata
 	var err error
-	var encoded string
 	var ratings *models.PackageRating
 	// Implement packages with content.
 	if dataURLEmpty {
-		c.AbortWithStatus(http.StatusNotImplemented)
-		return
+		metadata, err = packager.GetPackageJsonFromContent(data.Content)
+		if err != nil {
+			c.AbortWithStatus(http.StatusBadRequest)
+			log.Errorf("Error getting package.json from Content: %+v", data.Content)
+			return
+		}
+		ratings = &models.PackageRating{
+			LicenseScore:         1,
+			BusFactor:            1,
+			RampUp:               1,
+			Correctness:          1,
+			ResponsiveMaintainer: 1,
+			GoodPinningPractice:  1,
+			NetScore:             1,
+			PullRequest:          1,
+		}
 	} else {
-		metadata, encoded, err = packager.GetPackageJson(data.URL)
+		metadata, encoded, err := packager.GetPackageJson(data.URL)
 		if err != nil {
 			c.AbortWithStatus(http.StatusBadRequest) // Handle server errors.
 			return
@@ -97,7 +110,7 @@ func PackageCreate(c *gin.Context) {
 	}
 
 	if !isGoodRating(ratings) {
-		log.Infof("Pcakge has bad ratings. Ratings: %+v Pkg: %v", ratings, metadata.Name)
+		log.Infof("Pcakage has bad ratings. Ratings: %+v Pkg: %v", ratings, metadata.Name)
 		c.AbortWithStatus(http.StatusFailedDependency)
 		return
 	}
