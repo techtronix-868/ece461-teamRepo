@@ -54,13 +54,17 @@ func GetPackageJson(url string) (*models.PackageMetadata, string, error) {
 }
 
 func zipEncodeDir(dir string) (string, error) {
-	file, err := os.Create("output.zip")
+	file, err := os.CreateTemp(".", "*.zip")
+
 	if err != nil {
-		log.Errorf("Error creating output.zip file")
+		log.Errorf("Error creating zip file")
 		return "", err
 	}
+	defer file.Close()
+	defer os.RemoveAll(file.Name())
 
 	w := zip.NewWriter(file)
+	defer w.Close()
 
 	walker := func(path string, info os.FileInfo, err error) error {
 		//fmt.Printf("Crawling: %#v\n", path)
@@ -97,15 +101,13 @@ func zipEncodeDir(dir string) (string, error) {
 		log.Errorf("Error walking and creating zip from file %v", err)
 		return "", err
 	}
-	w.Close()
-	file.Close()
-	bytes, err := os.ReadFile("output.zip")
+	bytes, err := os.ReadFile(file.Name())
 	if err != nil {
 		log.Errorf("Error reading output zip %v", err)
 		return "", err
 	}
 	sEnc := b64.StdEncoding.EncodeToString(bytes)
-	os.RemoveAll("output.zip")
+
 	return sEnc, nil
 
 }
