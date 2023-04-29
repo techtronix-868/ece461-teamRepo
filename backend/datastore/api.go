@@ -233,6 +233,13 @@ func PackageUpdate(c *gin.Context) {
 			return
 		}
 	}
+
+	if !isGoodRating(ratings) {
+		log.Errorf("Updating pacakge %v, Ratings are no good: %+v", pkg.Metadata.Name, ratings)
+		c.AbortWithStatus(http.StatusFailedDependency)
+		return
+	}
+
 	// Update package data
 	packageData := pkg.Data
 	_, err = db.Exec("UPDATE PackageData pd SET Content = ?, JSProgram = ? WHERE pd.id = ? ",
