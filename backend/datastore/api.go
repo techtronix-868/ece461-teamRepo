@@ -278,8 +278,8 @@ func PackageUpdate(c *gin.Context) {
 		return
 	}
 
-	_, err = db.Exec(`UPDATE PackageRating pr SET BusFactor = ?, Correctness = ?, RampUp = ?, ResponsiveMaintainer = ?, LicenseScore = ?, GoodPinningPractice = ? WHERE pr.package_id = ?`,
-		ratings.BusFactor, ratings.Correctness, ratings.RampUp, ratings.ResponsiveMaintainer, ratings.LicenseScore, ratings.GoodPinningPractice, package_id)
+	_, err = db.Exec(`UPDATE PackageRating pr SET BusFactor = ?, Correctness = ?, RampUp = ?, ResponsiveMaintainer = ?, LicenseScore = ?, GoodPinningPractice = ?, NetScore = ?, PullRequest = ? WHERE pr.package_id = ?`,
+		ratings.BusFactor, ratings.Correctness, ratings.RampUp, ratings.ResponsiveMaintainer, ratings.LicenseScore, ratings.GoodPinningPractice, ratings.NetScore, ratings.PullRequest, package_id)
 	if err != nil {
 		log.Errorf("Error inserting rating %v", err)
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"description": "Internal server error: Could not insert package rating into database."})
