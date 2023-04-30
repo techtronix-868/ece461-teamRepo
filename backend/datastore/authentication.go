@@ -164,6 +164,7 @@ func authenticate(c *gin.Context) bool {
 		}
 		username, err := ExtractUserInfoFromToken(authTokenHeader)
 		if err != nil {
+			log.Error(err)
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return false
 		}

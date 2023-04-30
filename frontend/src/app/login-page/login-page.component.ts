@@ -29,7 +29,7 @@ export class LoginPageComponent {
     }
     var observe = "body"
     this.httpClient.request('put',
-      `http://172.20.64.1:8000/authenticate`,
+      `https://ece461-server-rruekicr4q-uc.a.run.app/authenticate`,
       {
         body: this.authRequest,
         responseType: 'text'
