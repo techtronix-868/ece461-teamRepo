@@ -53,15 +53,13 @@ func GetPackageJson(url string) (*models.PackageMetadata, string, error) {
 	return metadata, encoded, err
 }
 
-func zipEncodeDir(dir string) (string, error) {
+func zipDir(dir string) (string, error) {
 	file, err := os.CreateTemp(".", "*.zip")
 
 	if err != nil {
 		log.Errorf("Error creating zip file")
 		return "", err
 	}
-	defer file.Close()
-	defer os.RemoveAll(file.Name())
 
 	w := zip.NewWriter(file)
 	defer w.Close()
@@ -101,13 +99,21 @@ func zipEncodeDir(dir string) (string, error) {
 		log.Errorf("Error walking and creating zip from file %v", err)
 		return "", err
 	}
-	bytes, err := os.ReadFile(file.Name())
+
+	return file.Name(), nil
+}
+
+func zipEncodeDir(dir string) (string, error) {
+	file, err := zipDir(dir)
+	defer os.Remove(file)
+
+	bytes, err := os.ReadFile(file)
 	if err != nil {
 		log.Errorf("Error reading output zip %v", err)
 		return "", err
 	}
+	os.Remove(file)
 	sEnc := b64.StdEncoding.EncodeToString(bytes)
-
 	return sEnc, nil
 
 }
@@ -129,7 +135,7 @@ func Rate(url string) (*models.PackageRating, error) {
 		log.Errorf("Error creating temporary file for rate. %v", err)
 		return nil, err
 	}
-	defer os.RemoveAll(f.Name())
+	defer os.Remove(f.Name())
 
 	_, err = f.WriteString(url)
 	if err != nil {
