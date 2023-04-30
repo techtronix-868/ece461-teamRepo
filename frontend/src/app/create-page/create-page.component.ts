@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { DefaultService, ModelPackage, PackageData } from 'generated';
+import { LoginService } from 'loginService/login.service';
 
 @Component({
   selector: 'app-create-page',
@@ -9,7 +10,7 @@ import { DefaultService, ModelPackage, PackageData } from 'generated';
 })
 export class CreatePageComponent {
   
-  constructor(private service: DefaultService, private _snackbar: MatSnackBar) {
+  constructor(private service: DefaultService, private _snackbar: MatSnackBar, private loginService: LoginService) {
 
   }
 
@@ -21,7 +22,7 @@ export class CreatePageComponent {
 
   create() {
     this.pkg_data = {URL: this.URL}
-    this.service.packageCreate(this.pkg_data, "").subscribe(
+    this.service.packageCreate(this.pkg_data, this.loginService.getToken()).subscribe(
       body => {
         this.pkg = body;
         this._snackbar.open("Package created", "ok");

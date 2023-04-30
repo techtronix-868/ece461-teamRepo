@@ -1,7 +1,7 @@
 <div class="center">
     <h1><b>{{name}}</b></h1>
     <h2>Ratings</h2>
-    <ul class="list-group list-group-light">
+    <ul class="list-group list-group-light" *ngIf="pkg_rate">
         <li class="list-group-item">Bus Factor: <b>{{pkg_rate.BusFactor}}</b></li>
         <li class="list-group-item">Correctness:<b>{{pkg_rate.Correctness}}</b> </li>
         <li class="list-group-item">Good Pinning: <b>{{pkg_rate.GoodPinningPractice}}</b></li>
