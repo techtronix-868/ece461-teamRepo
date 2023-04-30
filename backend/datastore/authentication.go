@@ -33,10 +33,6 @@ func ExtractUserInfoFromToken(tokenString string) (string, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 			}
-			err := godotenv.Load()
-			if err != nil {
-				log.Print("Error loading .env file")
-			}
 
 			secret_key := os.Getenv("SECRET_KEY")
 			return []byte(secret_key), nil
