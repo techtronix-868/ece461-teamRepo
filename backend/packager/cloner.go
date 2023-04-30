@@ -61,6 +61,8 @@ func zipDir(dir string) (string, error) {
 		return "", err
 	}
 
+	defer file.Close()
+
 	w := zip.NewWriter(file)
 	defer w.Close()
 
@@ -112,7 +114,6 @@ func zipEncodeDir(dir string) (string, error) {
 		log.Errorf("Error reading output zip %v", err)
 		return "", err
 	}
-	os.Remove(file)
 	sEnc := b64.StdEncoding.EncodeToString(bytes)
 	return sEnc, nil
 
