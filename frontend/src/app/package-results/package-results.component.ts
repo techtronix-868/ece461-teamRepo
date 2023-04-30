@@ -23,7 +23,11 @@ export class PackageResultsComponent implements OnInit {
   constructor (private route: ActivatedRoute, private service: DefaultService, private _snackbar: MatSnackBar, private router: Router, private loginService: LoginService) {}
 
   ngOnInit(): void {
-    this.searchByNameVersion(true)
+    if (!this.loginService.loggedIn()) {
+      this.router.navigate(['/login'])
+    } else {
+      this.searchByNameVersion(true)
+    }
   }
   searchByNameVersion(newSearch: boolean) {
     this._snackbar.open("Searching...", "ok", )

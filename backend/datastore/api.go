@@ -624,7 +624,7 @@ func PackageByNameGet(c *gin.Context) {
 		"WHERE pmd.Name = ?", name)
 
 	fmt.Print(rows)
-	if !rows.Next() || err != nil {
+	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"description": "No such package."})
 		return
 	}
@@ -642,10 +642,16 @@ func PackageByNameGet(c *gin.Context) {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 			return
 		}
-		err = db.QueryRow("SELECT * FROM User WHERE id = ?", user_id).Scan(&packageHistoryEntry.User)
+		err = db.QueryRow("SELECT name, isAdmin FROM User WHERE id = ?", user_id).Scan(&packageHistoryEntry.User.Name, &packageHistoryEntry.User.IsAdmin)
 
 		packageHistoryEntry.PackageMetadata = packageMetadata
 		packageHistoryEntries = append(packageHistoryEntries, packageHistoryEntry)
+	}
+
+	if len(packageHistoryEntries) == 0 {
+		log.Errorf("No history for package found. %v", name)
+		c.AbortWithStatus(http.StatusNotFound)
+		return
 	}
 
 	// Check for errors during iteration

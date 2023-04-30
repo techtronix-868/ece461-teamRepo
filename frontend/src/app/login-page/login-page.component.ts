@@ -1,6 +1,10 @@
+import { HttpClient } from '@angular/common/http';
 import { Component } from '@angular/core';
 import { AuthenticationRequest, DefaultService, User } from 'generated';
 import { LoginService } from 'loginService/login.service';
+import { BASE_PATH, AuthenticationToken } from 'generated';
+import { Router } from '@angular/router';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-login-page',
@@ -11,7 +15,7 @@ export class LoginPageComponent {
   username: string = ""
   password: string = ""
   authRequest: AuthenticationRequest
-  constructor(private service: DefaultService, private loginService: LoginService) {}
+  constructor(private httpClient: HttpClient, private loginService: LoginService, private router: Router, private _snackBar: MatSnackBar) { }
 
   login() {
     this.authRequest = {
@@ -23,8 +27,17 @@ export class LoginPageComponent {
         password: this.password
       }
     }
-    this.service.createAuthToken(this.authRequest).subscribe(body => {
-      this.loginService.setToken(body)
-    })
+    var observe = "body"
+    this.httpClient.request('put',
+      `http://172.20.64.1:8000/authenticate`,
+      {
+        body: this.authRequest,
+        responseType: 'text'
+      }).subscribe(body => {
+        this.loginService.setToken(body)
+        this.router.navigate(['/home'])
+      }, error => {
+        this._snackBar.open("Invalid Credentials", "Ok")
+      });
   }
 }

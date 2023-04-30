@@ -16,7 +16,8 @@ const routes: Routes = [
   { path: 'package', component: PackagePageComponent},
   { path: 'create', component: CreatePageComponent},
   { path: 'update', component: UpdatePageComponent}, 
-  { path: 'login', component: LoginPageComponent}
+  { path: 'login', component: LoginPageComponent},
+  { path: 'home', component: HomePageComponent}
 ];
 
 @NgModule({

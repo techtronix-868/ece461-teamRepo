@@ -164,6 +164,7 @@ func Rate(url string) (*models.PackageRating, error) {
 		NetScore:             ratingMap["NET_SCORE"].(float64),
 		ResponsiveMaintainer: ratingMap["RESPONSIVE_MAINTAINER_SCORE"].(float64),
 		GoodPinningPractice:  ratingMap["VERSION_PINNING_SCORE"].(float64),
+		PullRequest:          ratingMap["ENGINEERING_PROCESS_SCORE"].(float64),
 	}
 
 	fmt.Printf("%+v", ratings)

@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { Router } from '@angular/router';
 import { DefaultService, ModelPackage, PackageData } from 'generated';
 import { LoginService } from 'loginService/login.service';
 
@@ -8,9 +9,15 @@ import { LoginService } from 'loginService/login.service';
   templateUrl: './create-page.component.html',
   styleUrls: ['./create-page.component.scss']
 })
-export class CreatePageComponent {
+export class CreatePageComponent implements OnInit {
+
+  ngOnInit(): void {
+    if (!this.loginService.loggedIn()) {
+      this.router.navigate(['/login'])
+    }
+  }
   
-  constructor(private service: DefaultService, private _snackbar: MatSnackBar, private loginService: LoginService) {
+  constructor(private service: DefaultService, private _snackbar: MatSnackBar, private loginService: LoginService, private router: Router) {
 
   }
 
