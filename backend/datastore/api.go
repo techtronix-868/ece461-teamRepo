@@ -216,6 +216,7 @@ func PackageUpdate(c *gin.Context) {
 	log.Infof("REQUEST -- PackageUpdate -- Package: %+v", pkg)
 
 	metadata := pkg.Metadata
+	packageID := metadata.ID
 	var existingPackage models.Package
 	var package_data_id int
 	var package_metadata_id int
@@ -287,7 +288,7 @@ func PackageUpdate(c *gin.Context) {
 	}
 
 	// Insert PackageHistoryEntry
-	updatePackageHistory(c, pkg.Metadata.ID, db, "UPDATE")
+	updatePackageHistory(c, packageID, db, "UPDATE")
 
 	c.JSON(http.StatusOK, gin.H{"description": "Version is updated"})
 }
@@ -438,6 +439,12 @@ func PackageByNameDelete(c *gin.Context) {
 			return
 		}
 		metadataIDs = append(metadataIDs, metadataID)
+	}
+
+	if len(metadataIDs) == 0 {
+		log.Errorf("No packages with name: %v found", packageName)
+		c.AbortWithStatus(http.StatusNotFound)
+		return
 	}
 
 	// Delete all history entries, package data, and package versions for each metadata ID
