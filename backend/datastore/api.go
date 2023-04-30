@@ -171,7 +171,7 @@ func PackageCreate(c *gin.Context) {
 	}
 
 	// Insert PackageHistoryEntry
-	updatePackageHistory(c, int(metadataID), db, "CREATE")
+	updatePackageHistory(c, metadata.ID, db, "CREATE")
 
 	// Successful Response
 	c.JSON(http.StatusCreated, gin.H{
@@ -287,7 +287,7 @@ func PackageUpdate(c *gin.Context) {
 	}
 
 	// Insert PackageHistoryEntry
-	updatePackageHistory(c, package_metadata_id, db, "UPDATE")
+	updatePackageHistory(c, pkg.Metadata.ID, db, "UPDATE")
 
 	c.JSON(http.StatusOK, gin.H{"description": "Version is updated"})
 }
@@ -318,7 +318,7 @@ func generatePackageID(db *sql.DB) string {
 	}
 }
 
-func updatePackageHistory(c *gin.Context, package_metadata_id int, db *sql.DB, action string) {
+func updatePackageHistory(c *gin.Context, packageID string, db *sql.DB, action string) {
 
 	var User_temp models.User
 	User_temp.Name = c.GetString("username")
@@ -334,6 +334,14 @@ func updatePackageHistory(c *gin.Context, package_metadata_id int, db *sql.DB, a
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error9"})
 		return
 	}
+	var package_metadata_id int
+	err = db.QueryRow("SELECT id FROM PackageMetadata WHERE PackageID = ? ", packageID).Scan(&package_metadata_id)
+	if err != nil {
+		log.Errorf("Error finding Metadata id from PackageID %v", packageID)
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
 	_, err = db.Exec("INSERT INTO PackageHistoryEntry (user_id, date, package_metadata_id, action) VALUES (?, ?, ?, ?)", user_table_id, packageHistoryEntry.Date, package_metadata_id, packageHistoryEntry.Action)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -535,7 +543,7 @@ func PackageRetrieve(c *gin.Context) {
 	}
 
 	// updatePackageHistory(c, 0) need to update package history, find way to obtain from database
-
+	updatePackageHistory(c, packageID, db, "DOWNLOAD")
 	c.JSON(http.StatusOK, gin.H{
 		"metadata": metadata,
 		"data":     data,
@@ -878,6 +886,8 @@ func PackageRate(c *gin.Context) {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
 			return
 		}
+
+		updatePackageHistory(c, pkgID, db, "RATE")
 
 		c.JSON(http.StatusOK, pkgRating)
 		return
