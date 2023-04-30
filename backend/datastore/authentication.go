@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -26,29 +25,27 @@ type UserCredentials struct {
 var useAuthentication = true
 
 func ExtractUserInfoFromToken(tokenString string) (string, error) {
-	if strings.HasPrefix(tokenString, "Bearer ") {
-		tokenString = tokenString[8:]
-		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			// Verify that the signing method is HMAC and the secret matches
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-			}
-
-			secret_key := os.Getenv("SECRET_KEY")
-			return []byte(secret_key), nil
-		})
-		if err != nil {
-			return "", err
+	//fmt.Print(tokenString)
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		// Verify that the signing method is HMAC and the secret matches
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 
-		// Extract the "user_name" claim from the token
-		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			username, ok1 := claims["username"].(string)
-			if !ok1 {
-				return "", fmt.Errorf("invalid claims")
-			}
-			return username, nil
+		secret_key := os.Getenv("SECRET_KEY")
+		return []byte(secret_key), nil
+	})
+	if err != nil {
+		return "", err
+	}
+
+	// Extract the "user_name" claim from the token
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		username, ok1 := claims["username"].(string)
+		if !ok1 {
+			return "", fmt.Errorf("invalid claims")
 		}
+		return username, nil
 	}
 	return "", fmt.Errorf("invalid token")
 }

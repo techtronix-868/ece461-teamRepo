@@ -6,7 +6,7 @@ export class LoginService {
     }
 
     public getToken(): string {
-        return "Bearer " + this.token
+        return this.token
     }
 
     public loggedIn(): boolean {
