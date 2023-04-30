@@ -113,6 +113,7 @@ func CreateAuthToken(c *gin.Context) {
 		// Verify password
 		if dbAuthInfo.Password != authReq.Secret.Password {
 			c.JSON(http.StatusUnauthorized, gin.H{"Message": "unauth"})
+			return
 		}
 		// Verify password
 		// if !verifyPassword(authReq.Secret.Password, dbAuthInfo.Password) {

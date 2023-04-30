@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component } from '@angular/core';
+import { Component, Inject } from '@angular/core';
 import { AuthenticationRequest, DefaultService, User } from 'generated';
 import { LoginService } from 'loginService/login.service';
 import { BASE_PATH, AuthenticationToken } from 'generated';
@@ -14,8 +14,12 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 export class LoginPageComponent {
   username: string = ""
   password: string = ""
+  base_url: string = ""
   authRequest: AuthenticationRequest
-  constructor(private httpClient: HttpClient, private loginService: LoginService, private router: Router, private _snackBar: MatSnackBar) { }
+  constructor(private httpClient: HttpClient, private loginService: LoginService, private router: Router, private _snackBar: MatSnackBar, @Inject(BASE_PATH) basePath: string) { 
+    this.base_url = basePath;
+    console.log(`${this.base_url}/authenticate`)
+  }
 
   login() {
     this.authRequest = {
@@ -29,7 +33,7 @@ export class LoginPageComponent {
     }
     var observe = "body"
     this.httpClient.request('put',
-      `https://ece461-server-rruekicr4q-uc.a.run.app/authenticate`,
+      `${this.base_url}/authenticate`,
       {
         body: this.authRequest,
         responseType: 'text'
