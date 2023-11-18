@@ -1,5 +1,4 @@
-# ece461-teamRepo
-The following repository will be utilized by my teammates
+scoreRepo
 
 --Kahaan Patel
 --Ishaan Jain
